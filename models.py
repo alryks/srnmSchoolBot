@@ -31,5 +31,5 @@ class LessonStates(StatesGroup):
 
 class SettingsStates(StatesGroup):
     settings = State()
-    reminding = State()
-    tomorrow_remind = State()
+    timezone = State()
+    time = State()

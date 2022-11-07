@@ -1,4 +1,9 @@
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
+from aiogram.dispatcher.storage import FSMContext
+
+from langs import langs
+
+from models import *
 
 from db.main import connect
 from db.model import Class
@@ -6,6 +11,11 @@ from db.model import Class
 import sqlalchemy
 
 content_types = ['audio', 'document', 'photo', 'sticker', 'video', 'video_note', 'voice', 'location', 'contact']
+all_states = [*ClassStates.all_states,
+              *GroupStates.all_states,
+              *LessonStates.all_states,
+              *SettingsStates.all_states,
+              None]
 
 
 def markdownv2(text: str) -> str:
@@ -23,3 +33,21 @@ def choose_language(message: Message) -> str:
         lang = 'en'
     s.close()
     return lang
+
+
+def is_int(string: str):
+    try:
+        n = int(string)
+    except ValueError:
+        return False
+    return True
+
+
+async def alert(callback: CallbackQuery, show_alert=False):
+    buts = []
+    for i in callback.values['message']['reply_markup']['inline_keyboard']:
+        buts += i
+    for i in buts:
+        if i['callback_data'] == callback.data:
+            await callback.answer(i['text'], show_alert=show_alert)
+            break

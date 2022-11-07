@@ -5,6 +5,7 @@ from langs import langs
 import keyboards
 from models import *
 from utils import *
+import settings
 
 from db.main import connect
 from db.model import *
@@ -18,13 +19,32 @@ dp = main.dp
 bot = main.bot
 
 
-@dp.message_handler(commands=['start'],
-                    state=[
-                        *ClassStates.all_states,
-                        *GroupStates.all_states,
-                        *LessonStates.all_states,
-                        None
-                    ])
+async def only_admin_message(message: Message, state: FSMContext):
+    lang = choose_language(message)
+
+    async with state.proxy() as data:
+        admin_id = data['admin_id']
+    # print(admin_id, message.from_user.id)
+    if message.from_user.id != admin_id:
+        await message.answer(markdownv2(langs[lang]['only_admin']))
+        return False
+    else:
+        return True
+
+
+async def only_admin_callback(callback: CallbackQuery, state: FSMContext):
+    lang = choose_language(callback.message)
+
+    async with state.proxy() as data:
+        admin_id = data['admin_id']
+    if callback.from_user.id != admin_id:
+        await callback.answer(langs[lang]['only_admin'], show_alert=True)
+        return False
+    else:
+        return True
+
+
+@dp.message_handler(commands=['start'], state=all_states)
 async def start(message: Message, state: FSMContext):
     lang = choose_language(message)
 
@@ -36,13 +56,7 @@ async def start(message: Message, state: FSMContext):
     await message.answer(markdownv2(langs[lang]['start'].format(name=name)))
 
 
-@dp.message_handler(commands=['help'],
-                    state=[
-                        *ClassStates.all_states,
-                        *GroupStates.all_states,
-                        *LessonStates.all_states,
-                        None
-                    ])
+@dp.message_handler(commands=['help'], state=all_states)
 async def help_cmd(message: Message, state: FSMContext):
     lang = choose_language(message)
 
@@ -74,36 +88,7 @@ async def not_text(message: Message, state: FSMContext):
     await message.answer(markdownv2(langs[lang]['not_text']))
 
 
-async def only_admin_message(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    async with state.proxy() as data:
-        admin_id = data['admin_id']
-    if message.from_user.id != admin_id:
-        await message.answer(markdownv2(langs[lang]['only_admin']))
-        await message.delete()
-        return False
-    return True
-
-
-async def only_admin_callback(callback: CallbackQuery, state: FSMContext):
-    lang = choose_language(callback.message)
-
-    async with state.proxy() as data:
-        admin_id = data['admin_id']
-    if callback.from_user.id != admin_id:
-        await callback.answer(langs[lang]['only_admin'], show_alert=True)
-        return False
-    return True
-
-
-@dp.message_handler(commands=['class'],
-                    state=[
-                        *ClassStates.all_states,
-                        *GroupStates.all_states,
-                        *LessonStates.all_states,
-                        None
-                    ])
+@dp.message_handler(commands=['class'], state=all_states)
 async def edit_class(message: Message, state: FSMContext, callback=None):
     lang = choose_language(message)
 
@@ -112,21 +97,43 @@ async def edit_class(message: Message, state: FSMContext, callback=None):
         editclass = s.query(Class).filter(Class.chat_id == message.chat.id).one()
     except sqlalchemy.exc.NoResultFound:
         editclass = False
-    s.close()
     if editclass:
         user_action = callback if callback else message
-        if int(editclass.admin_id) == user_action.from_user.id:
-            async with state.proxy() as data:
-                data['admin_id'] = user_action.from_user.id
+        async with state.proxy() as data:
+            data['admin_id'] = int(editclass.admin_id)
+        if data['admin_id'] == user_action.from_user.id:
             await ClassStates.edit_class.set()
-            await message.answer(markdownv2(langs[lang]['edit_class'].format(name=editclass.name)), reply_markup=keyboards.edit_class(message, lang))
+            await message.answer(markdownv2(langs[lang]['edit_class'].format(name=editclass.name)), reply_markup=await keyboards.edit_class(message, state))
         else:
             await only_admin_message(message, state)
     else:
         async with state.proxy() as data:
             data['admin_id'] = message.from_user.id
         await ClassStates.new_class.set()
-        await message.answer(markdownv2(langs[lang]['new_class']), reply_markup=keyboards.class_name(message, lang))
+        await message.answer(markdownv2(langs[lang]['new_class']), reply_markup=await keyboards.class_name(message, state))
+
+
+@dp.message_handler(commands=['settings'], state=all_states)
+async def settings_cmd(message: Message, state: FSMContext, callback=None):
+    lang = choose_language(message)
+
+    s = connect()
+    try:
+        editclass = s.query(Class).filter(Class.chat_id == message.chat.id).one()
+    except sqlalchemy.exc.NoResultFound:
+        editclass = False
+
+    if editclass:
+        user_action = callback if callback else message
+        async with state.proxy() as data:
+            data['admin_id'] = int(editclass.admin_id)
+        if data['admin_id'] == user_action.from_user.id:
+            await SettingsStates.settings.set()
+            await message.answer(markdownv2(langs[lang]['settings'].format(name=editclass.name)), reply_markup=await keyboards.settings(message, state))
+        else:
+            await only_admin_message(message, state)
+    else:
+        await message.answer(markdownv2(langs[lang]['no_class']))
 
 
 @dp.message_handler(content_types=['text'], state=ClassStates.new_class)
@@ -147,7 +154,7 @@ async def callback_new_class(callback: CallbackQuery, state: FSMContext):
     lang = choose_language(callback.message)
 
     if await only_admin_callback(callback, state):
-        if callback.data == 'cancel':
+        if callback.data == 'cancel_edit_class_name':
             await state.finish()
             await callback.message.delete()
 
@@ -157,59 +164,16 @@ async def callback_edit_class(callback: CallbackQuery, state: FSMContext):
     lang = choose_language(callback.message)
 
     if await only_admin_callback(callback, state):
-        if callback.data == 'cancel':
+        if callback.data == 'cancel_edit_class':
             await state.finish()
-        elif callback.data == 'delete':
+        elif callback.data == 'delete_edit_class':
             await ClassStates.delete_class.set()
             s = connect()
             name = s.query(Class.name).filter(Class.chat_id == callback.message.chat.id).one()[0]
-            await callback.message.answer(markdownv2(langs[lang]['delete_class'].format(name=name)), reply_markup=keyboards.delete_class(callback.message, lang))
-        elif callback.data == 'name':
+            await callback.message.answer(markdownv2(langs[lang]['delete_class'].format(name=name)), reply_markup=await keyboards.delete_class(callback.message, state))
+        elif callback.data == 'name_edit_class':
             await ClassStates.edit_class_name.set()
-            await callback.message.answer(markdownv2(langs[lang]['edit_class_name']), reply_markup=keyboards.class_name(callback.message, lang))
-        await callback.message.delete()
-
-
-@dp.callback_query_handler(state=ClassStates.edit_class_name)
-async def callback_edit_class_name(callback: CallbackQuery, state: FSMContext):
-    lang = choose_language(callback.message)
-
-    if await only_admin_callback(callback, state):
-        if callback.data == 'cancel':
-            await edit_class(callback.message, state, callback)
-
-
-@dp.callback_query_handler(state=ClassStates.delete_class)
-async def callback_delete_class(callback: CallbackQuery, state: FSMContext):
-    lang = choose_language(callback.message)
-
-    if await only_admin_callback(callback, state):
-        if callback.data == 'no':
-            await edit_class(callback.message, state, callback)
-        elif callback.data == 'yes':
-            await ClassStates.sure_delete_class.set()
-            await callback.message.answer(markdownv2(langs[lang]['sure_delete_class']), reply_markup=keyboards.sure_delete_class(callback.message, lang))
-        await callback.message.delete()
-
-
-@dp.callback_query_handler(state=ClassStates.sure_delete_class)
-async def callback_sure_delete_class(callback: CallbackQuery, state: FSMContext):
-    lang = choose_language(callback.message)
-
-    if await only_admin_callback(callback, state):
-        if callback.data == 'no':
-            await edit_class(callback.message, state, callback)
-        elif callback.data == 'yes':
-            s = connect()
-            class_query = s.query(Class).filter(Class.chat_id == callback.message.chat.id)
-            class_id = class_query[0].id
-            class_query.delete()
-            # groups_query = s.query(Group).filter(Group.class_id == class_id)
-            # groups = [i.id for i in groups_query]
-            # groups_query.delete()
-            # s.query(Lesson).filter(Lesson.group.id in groups).delete()
-            s.commit()
-            await callback.message.answer(markdownv2(langs[lang]['sure_delete_class_deleted']))
+            await callback.message.answer(markdownv2(langs[lang]['edit_class_name']), reply_markup=await keyboards.class_name(callback.message, state))
         await callback.message.delete()
 
 
@@ -224,3 +188,147 @@ async def edit_class_name(message: Message, state: FSMContext):
         s.close()
         await message.answer(markdownv2(langs[lang]['edit_class_name_changed'].format(name=message.text)))
         await edit_class(message, state)
+
+
+@dp.callback_query_handler(state=ClassStates.edit_class_name)
+async def callback_edit_class_name(callback: CallbackQuery, state: FSMContext):
+    lang = choose_language(callback.message)
+
+    if await only_admin_callback(callback, state):
+        if callback.data == 'cancel_edit_class_name':
+            await edit_class(callback.message, state, callback)
+            await callback.message.delete()
+
+
+@dp.callback_query_handler(state=ClassStates.delete_class)
+async def callback_delete_class(callback: CallbackQuery, state: FSMContext):
+    lang = choose_language(callback.message)
+
+    if await only_admin_callback(callback, state):
+        if callback.data == 'no_delete_class':
+            await edit_class(callback.message, state, callback)
+        elif callback.data == 'yes_delete_class':
+            await ClassStates.sure_delete_class.set()
+            await callback.message.answer(markdownv2(langs[lang]['sure_delete_class']), reply_markup=await keyboards.sure_delete_class(callback.message, state))
+        await callback.message.delete()
+
+
+@dp.callback_query_handler(state=ClassStates.sure_delete_class)
+async def callback_sure_delete_class(callback: CallbackQuery, state: FSMContext):
+    lang = choose_language(callback.message)
+
+    if await only_admin_callback(callback, state):
+        if callback.data == 'no_sure_delete_class':
+            await edit_class(callback.message, state, callback)
+        elif callback.data == 'yes_sure_delete_class':
+            await state.finish()
+            s = connect()
+            class_query = s.query(Class).filter(Class.chat_id == callback.message.chat.id)
+            class_id = class_query[0].id
+            class_query.delete()
+            # groups_query = s.query(Group).filter(Group.class_id == class_id)
+            # groups = [i.id for i in groups_query]
+            # groups_query.delete()
+            # s.query(Lesson).filter(Lesson.group.id in groups).delete()
+            s.commit()
+            await callback.message.answer(markdownv2(langs[lang]['sure_delete_class_deleted']))
+        await callback.message.delete()
+
+
+@dp.callback_query_handler(state=SettingsStates.settings)
+async def callback_settings(callback: CallbackQuery, state: FSMContext):
+    lang = choose_language(callback.message)
+
+    if await only_admin_callback(callback, state):
+        s = connect()
+        editclass = s.query(Class).filter(Class.chat_id == callback.message.chat.id)
+
+        if callback.data == 'lang':
+            if len(settings.LANGS) > 1:
+                new_lang = settings.LANGS[(settings.LANGS.index(editclass[0].lang) + 1) % len(settings.LANGS)]
+                editclass.update({Class.lang: new_lang})
+                s.commit()
+                await callback.message.edit_reply_markup(await keyboards.settings(callback.message, state))
+            else:
+                await alert(callback)
+        elif callback.data == 'notify':
+            new_notify = (editclass[0].notify + 1) % 2
+            editclass.update({Class.notify: new_notify})
+            s.commit()
+            await callback.message.edit_reply_markup(await keyboards.settings(callback.message, state))
+        elif callback.data == 'timezone':
+            await SettingsStates.timezone.set()
+            await callback.message.answer(markdownv2(langs[lang]['timezone'].format(name=editclass[0].name)), reply_markup=await keyboards.timezone(callback.message, state))
+            await callback.message.delete()
+        elif callback.data == 'time_settings':
+            await SettingsStates.time.set()
+            async with state.proxy() as data:
+                data['before'] = editclass[0].lesson
+                data['hrs'] = editclass[0].tomorrow.hour
+                data['mins'] = editclass[0].tomorrow.minute
+            await callback.message.answer(markdownv2(langs[lang]['time_settings'].format(name=editclass[0].name)), reply_markup=await keyboards.time_settings(callback.message, state))
+            await callback.message.delete()
+        elif callback.data == 'cancel_settings':
+            await state.finish()
+            await callback.message.delete()
+
+
+@dp.callback_query_handler(state=SettingsStates.timezone)
+async def callback_timezone(callback: CallbackQuery, state: FSMContext):
+    lang = choose_language(callback.message)
+
+    if await only_admin_callback(callback, state):
+        if is_int(callback.data):
+            s = connect()
+            s.query(Class).filter(Class.chat_id == callback.message.chat.id).update({Class.timezone: int(callback.data)})
+            s.commit()
+            await settings_cmd(callback.message, state, callback=callback)
+            await callback.message.delete()
+        elif callback.data == 'back_timezone':
+            await settings_cmd(callback.message, state, callback=callback)
+            await callback.message.delete()
+
+
+@dp.callback_query_handler(state=SettingsStates.time)
+async def callback_time_settings(callback: CallbackQuery, state: FSMContext):
+    lang = choose_language(callback.message)
+
+    s = connect()
+    editclass = s.query(Class).filter(Class.chat_id == callback.message.chat.id)
+    async with state.proxy() as data:
+        new_before = data['before']
+        new_hrs = data['hrs']
+        new_mins = data['mins']
+
+    if await only_admin_callback(callback, state):
+        if callback.data.startswith('none'):
+            await alert(callback)
+        elif callback.data == 'save_time_settings':
+            editclass.update({Class.lesson: new_before, Class.tomorrow: datetime.datetime(year=2005, month=9, day=9, hour=new_hrs, minute=new_mins)})
+            s.commit()
+            await settings_cmd(callback.message, state, callback=callback)
+            await callback.message.delete()
+            return
+        elif callback.data == 'back_time_settings':
+            await settings_cmd(callback.message, state, callback=callback)
+            await callback.message.delete()
+            return
+        elif callback.data == 'left_before':
+            new_before = new_before - 5 if new_before > 0 else new_before
+        elif callback.data == 'right_before':
+            new_before = new_before + 5
+        elif callback.data == 'left_hrs':
+            new_hrs = (new_hrs - 1) % 24
+        elif callback.data == 'right_hrs':
+            new_hrs = (new_hrs + 1) % 24
+        elif callback.data == 'left_mins':
+            new_mins = (new_mins - 5) % 60
+        elif callback.data == 'right_mins':
+            new_mins = (new_mins + 5) % 60
+
+        async with state.proxy() as data:
+            data['before'] = new_before
+            data['hrs'] = new_hrs
+            data['mins'] = new_mins
+
+        await callback.message.edit_reply_markup(await keyboards.time_settings(callback.message, state))
