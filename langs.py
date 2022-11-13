@@ -18,6 +18,7 @@ langs = {
                 'no': "❌ Not on your life!"
             },
             'settings': {
+                'admins': "👨‍💻 Change admins",
                 'lang': "💭 Language: {lang}",
                 'notify': "🔔 Notifications: {notify}",
                 'timezone': "✈ Timezone: UTC{timezone}",
@@ -64,7 +65,30 @@ langs = {
                 'hours': "{hours} h.",
                 'minutes': "{mins} min.",
                 'back': "🔙 Back"
-}
+            },
+            'groups': {
+                'add': "➕ Add group",
+                'cancel': "🔙 Cancel"
+            },
+            'add_group': {
+                'back': "🔙 Back"
+            },
+            'group': {
+                'name': "♻ Edit name",
+                'delete': "❌ Delete group",
+                'back': "🔙 Back"
+            },
+            'edit_group_name': {
+                'cancel': "🔙 Cancel"
+            },
+            'delete_group': {
+                'yes': "✅ Sure",
+                'no': "❌ Not at all"
+            },
+            'admins': {
+                'add': "➕ Add admin",
+                'back': "🔙 Back"
+            }
         },
         'start':
             """
@@ -97,6 +121,10 @@ After that use _this commands_ in order and _follow instructions_:
             """
 ❌ Only admin can do this!
             """,
+        'too_fast':
+            """
+❌ Don't click too fast. Retry in {seconds} seconds!
+            """,
         'edit_class':
             """
 😍 This is your class: *{name}*
@@ -123,6 +151,8 @@ What would be the name of your class?
 🎉 Your class with name *{name}* has been successfully created!
 
 📍 Don't forget to check out /settings before using the bot!
+
+👨‍🎓 To use scheduling feature, create at least _one group_ via /groups
             """,
         'delete_class':
             """
@@ -166,6 +196,54 @@ This is needed to make the bot usable in different countries with different time
 🔜 Firstly, choose the time gap before the lesson when @srnmSchoolBot will send you a message about next lesson
 
 🕰 Then choose the exact time of the day when you will be notified about the next day lessons
+            """,
+        'groups':
+            """
+📈 Here you can create groups to edit your lessons timetable or choose an existing one!
+            """,
+        'add_group':
+            """
+What would be the name of a new group?
+            """,
+        'added_group':
+            """
+✅ Group *{class_name} {group}* has been added successfully! Check out /timetable to schedule your lessons
+            """,
+        'group':
+            """
+⚙ This is *{class_name} {group}*. Here you can edit your group's name or delete it!
+            """,
+        'edit_group_name':
+            """
+🤔 Choose a new name for *{class_name} {group}*
+            """,
+        'edit_group_name_changed':
+            """
+✅ Group name has been changed!
+            """,
+        'delete_group':
+            """
+🤔 Are you sure you want to delete *{class_name} {group}*? _All the *timetables* for this group will be *deleted*!_
+            """,
+        'deleted_group':
+            """
+✅ Group has been successfully deleted!
+            """,
+        'admins':
+            """
+👉 Here is an admin list of *{name}*!
+
+📌 You can delete the existing one (except for yourself) or add a new one (maximum of 5 admins) 
+            """,
+        'add_admin':
+            """
+✍ Type in an id of the user you want to be an admin
+
+_📍 You can ask a user you want to add to look his id in @userinfobot_
+            """,
+        'incorrect_admin':
+            """
+❗ ID must be not longer than 10 symbols
             """
     }
 }

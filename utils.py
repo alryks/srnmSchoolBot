@@ -51,3 +51,9 @@ async def alert(callback: CallbackQuery, show_alert=False):
         if i['callback_data'] == callback.data:
             await callback.answer(i['text'], show_alert=show_alert)
             break
+
+
+async def too_fast(callback: CallbackQuery, seconds, show_alert=False):
+    lang = choose_language(callback.message)
+
+    await callback.answer(langs[lang]['too_fast'].format(seconds=seconds), show_alert=show_alert)

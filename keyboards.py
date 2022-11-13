@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
 from aiogram.dispatcher.dispatcher import FSMContext
 from langs import langs
 
@@ -70,6 +70,7 @@ async def settings(message: Message, state: FSMContext):
 
     current_timezone = str(editclass.timezone) if editclass.timezone < 0 else '+' + str(editclass.timezone)
 
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['admins'], callback_data='admins')])
     rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['lang'].format(lang=editclass.lang), callback_data='lang')])
     rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['notify'].format(notify='✅' if editclass.notify else '❌'), callback_data='notify')])
     rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['timezone'].format(timezone=current_timezone), callback_data='timezone')])
@@ -121,5 +122,97 @@ async def time_settings(message: Message, state: FSMContext):
                  InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['minutes'].format(mins=mins), callback_data='none_time_settings_5'),
                  InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['right'], callback_data='right_mins')])
     rows.append([InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['back'], callback_data='back_time_settings')])
+
+    return create_inline_keyboard(rows)
+
+
+async def groups(message: Message, state: FSMContext):
+    lang = choose_language(message)
+
+    s = connect()
+    groups = s.query(Group).filter(Group.class_id == s.query(Class).filter(Class.chat_id == message.chat.id).one().id)
+
+    rows = list()
+
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['groups']['add'], callback_data='add_groups')])
+    for i, group in enumerate(groups):
+        rows.append([InlineKeyboardButton(group.name, callback_data=f'group_{group.id}')])
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['groups']['cancel'], callback_data='cancel_groups')])
+
+    return create_inline_keyboard(rows)
+
+
+async def add_group(message: Message, state: FSMContext):
+    lang = choose_language(message)
+
+    rows = list()
+
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['add_group']['back'], callback_data='back_add_group')])
+
+    return create_inline_keyboard(rows)
+
+
+async def group(message: Message, state: FSMContext):
+    lang = choose_language(message)
+
+    rows = list()
+
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['group']['name'], callback_data='name_group')])
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['group']['delete'], callback_data='delete_group')])
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['group']['back'], callback_data='back_group')])
+
+    return create_inline_keyboard(rows)
+
+
+async def edit_group_name(message: Message, state: FSMContext):
+    lang = choose_language(message)
+
+    rows = list()
+
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['edit_group_name']['cancel'], callback_data='cancel_edit_group_name')])
+
+    return create_inline_keyboard(rows)
+
+
+async def delete_group(message: Message, state: FSMContext):
+    lang = choose_language(message)
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(langs[lang]['keyboards']['delete_group']['yes'], callback_data='yes_delete_group'),
+        InlineKeyboardButton(langs[lang]['keyboards']['delete_group']['no'], callback_data='no_delete_group'),
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+async def admins(callback: CallbackQuery, state: FSMContext):
+    lang = choose_language(callback.message)
+
+    s = connect()
+    editclass = s.query(Class).filter(Class.chat_id == callback.message.chat.id).one()
+    admin_list = editclass.admin_id.split()
+
+    rows = list()
+
+    if len(admin_list) < 5:
+        rows.append([InlineKeyboardButton(langs[lang]['keyboards']['admins']['add'], callback_data='add_admin')])
+    for admin in admin_list:
+        if callback.from_user.id == int(admin):
+            rows.append([InlineKeyboardButton(admin, callback_data='none_' + admin)])
+        else:
+            rows.append([InlineKeyboardButton(admin, callback_data='none_' + admin), InlineKeyboardButton("❌", callback_data='delete_admin_' + admin)])
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['admins']['back'], callback_data='back_admins')])
+
+    return create_inline_keyboard(rows)
+
+
+async def add_admin(message: Message, state: FSMContext):
+    lang = choose_language(message)
+
+    rows = list()
+
+    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['admins']['back'], callback_data='back_add_admin')])
 
     return create_inline_keyboard(rows)

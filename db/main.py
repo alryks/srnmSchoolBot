@@ -13,7 +13,7 @@ def initialise():
     classes = Table('class', meta,
                     Column('id', INTEGER, primary_key=True, autoincrement=True, unique=True, nullable=False),
                     Column('chat_id', INTEGER, primary_key=False, autoincrement=False, unique=True, nullable=False),
-                    Column('admin_id', VARCHAR(16), primary_key=False, autoincrement=False, unique=False, nullable=False),
+                    Column('admin_id', VARCHAR(64), primary_key=False, autoincrement=False, unique=False, nullable=False),
                     Column('name', VARCHAR(64), primary_key=False, autoincrement=False, unique=False, nullable=False),
 
                     Column('lang', VARCHAR(2), primary_key=False, autoincrement=False, unique=False, nullable=False, default='en'),

@@ -31,5 +31,7 @@ class LessonStates(StatesGroup):
 
 class SettingsStates(StatesGroup):
     settings = State()
+    admins = State()
+    add_admin = State()
     timezone = State()
     time = State()
