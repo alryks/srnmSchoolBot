@@ -247,3 +247,55 @@ def group_choose(action, data):
     ])
 
     return create_inline_keyboard(rows)
+
+def group_now(action):
+    fields = create_button_text(action, 'group_now')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='group_now_back')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['name'], callback_data='group_now_name')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['timetable'], callback_data='group_now_timetable')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['delete'], callback_data='group_now_delete')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def group_change_name(action):
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+    rows.append([
+        InlineKeyboardButton(back, callback_data='group_change_name_back')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def group_delete(action):
+    fields = create_button_text(action, 'group_delete')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(fields['yes'], callback_data='group_delete_yes'),
+        InlineKeyboardButton(fields['no'], callback_data='group_delete_no'),
+    ])
+
+    return create_inline_keyboard(rows)

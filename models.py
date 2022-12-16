@@ -25,6 +25,7 @@ class PrivateStates(StatesGroup):
 
     group_create_name = State()
     group_choose = State()
+    group_now = State()
     group_change_name = State()
     group_delete = State()
 

@@ -65,7 +65,16 @@ langs = {
             },
             'group_choose': {
                 'add': "Add group ➕"
-            }
+            },
+            'group_now': {
+                'name': "Change name 🗣",
+                'timetable': "Edit timetable 🗓",
+                'delete': "Delete group ❌"
+            },
+            'group_delete': {
+                'yes': "Yes",
+                'no': "No"
+            },
         },
         'start':
             """
@@ -167,6 +176,18 @@ What should be the name of your *{name}* group?
         'group_choose':
             """
 Here are *{name}* groups! Choose one to edit timetable 👈 
+            """,
+        'group_now':
+            """
+This is *{clas} {group}*. Choose, what you want to do 👇
+            """,
+        'group_change_name':
+            """
+Which name do you prefer instead of *{clas} {group}*? 🤔 
+            """,
+        'group_delete':
+            """
+Are you sure you want to delete your *{group}* of *{clas}*? Your timetable for this group will be deleted too! ❌
             """
     }
 }

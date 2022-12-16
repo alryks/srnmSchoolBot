@@ -193,6 +193,26 @@ async def group_create_name(action: Union[Message, CallbackQuery], state: FSMCon
         await text_message(action, create_text(action, 'group_choose', name=clas.name), keyboard=keyboards.group_choose(action, groups))
 
 
+@dp.message_handler(lambda message: message.chat.type == 'private', state=PrivateStates.group_change_name)
+async def group_change_name(action: Union[Message, CallbackQuery], state: FSMContext):
+    symbols = 64
+    if len(action.text) > symbols:
+        await max_lim(action, symbols)
+    else:
+        async with state.proxy() as data:
+            class_id = data['class_id']
+            group_id = data['group_id']
+        s = connect()
+        s.query(Groups).filter(Groups.id == group_id).update({'name': action.text})
+        s.commit()
+
+        group = s.query(Groups).filter(Groups.id == group_id).one()
+        clas = s.query(Classes).filter(Classes.id == class_id).one()
+        await PrivateStates.group_now.set()
+        await text_message(action, create_text(action, 'group_now', clas=clas.name, group=group.name), keyboard=keyboards.group_now(action))
+
+
+
 """
 CALLBACK HANDLERS
 """
@@ -394,7 +414,7 @@ async def callback_group_create_name(callback: CallbackQuery, state: FSMContext)
 
 
 @dp.callback_query_handler(state=PrivateStates.group_choose)
-async def callback_group_create_name(callback: CallbackQuery, state: FSMContext):
+async def callback_group_choose(callback: CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         class_id = data['class_id']
 
@@ -407,4 +427,69 @@ async def callback_group_create_name(callback: CallbackQuery, state: FSMContext)
         await PrivateStates.group_create_name.set()
         await text_message(callback, create_text(callback, 'group_create_name', name=clas.name), keyboard=keyboards.group_create_name(callback))
     elif callback.data.startswith('group_choose'):
+        group_id = int(callback.data[13:])
+        async with state.proxy() as data:
+            data['group_id'] = group_id
+        group = s.query(Groups).filter(Groups.id == group_id).one()
+        await PrivateStates.group_now.set()
+        await text_message(callback, create_text(callback, 'group_now', clas=clas.name, group=group.name), keyboard=keyboards.group_now(callback))
+
+
+@dp.callback_query_handler(state=PrivateStates.group_now)
+async def callback_group_now(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    group = s.query(Groups).filter(Groups.id == group_id).one()
+    groups = s.query(Groups).filter(Groups.class_id == class_id).all()
+    if callback.data == 'group_now_back':
+        await PrivateStates.group_choose.set()
+        await text_message(callback, create_text(callback, 'group_choose', name=clas.name), keyboard=keyboards.group_choose(callback, groups))
+    elif callback.data == 'group_now_name':
+        await PrivateStates.group_change_name.set()
+        await text_message(callback, create_text(callback, 'group_change_name', clas=clas.name, group=group.name), keyboard=keyboards.group_change_name(callback))
+    elif callback.data == 'group_now_timetable':
         pass
+    elif callback.data == 'group_now_delete':
+        await PrivateStates.group_delete.set()
+        await text_message(callback, create_text(callback, 'group_delete', clas=clas.name, group=group.name), keyboard=keyboards.group_delete(callback))
+
+
+@dp.callback_query_handler(state=PrivateStates.group_delete)
+async def callback_group_delete(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    group = s.query(Groups).filter(Groups.id == group_id).one()
+    groups = s.query(Groups).filter(Groups.class_id == class_id).all()
+    if callback.data == 'group_delete_yes':
+        await PrivateStates.class_now.set()
+        s.query(Lessons).filter(Lessons.group_id == group_id).delete()
+        s.query(Groups).filter(Groups.id == group_id).delete()
+        s.commit()
+        await text_message(callback, create_text(callback, 'class_now', name=clas.name), keyboard=keyboards.class_now(callback))
+    elif callback.data == 'group_delete_no':
+        await PrivateStates.group_now.set()
+        await text_message(callback, create_text(callback, 'group_now', clas=clas.name, group=group.name), keyboard=keyboards.group_now(callback))
+
+
+@dp.callback_query_handler(state=PrivateStates.group_change_name)
+async def callback_group_change_name(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    group = s.query(Groups).filter(Groups.id == group_id).one()
+    groups = s.query(Groups).filter(Groups.class_id == class_id).all()
+    if callback.data == 'group_change_name_back':
+        await PrivateStates.group_now.set()
+        await text_message(callback, create_text(callback, 'group_now', clas=clas, group=group), keyboard=keyboards.group_now(callback))
+
