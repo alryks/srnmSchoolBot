@@ -13,7 +13,6 @@ import handlers
 async def on_startup(_):
     for ADMIN in ADMINS:
         await bot.send_message(ADMIN, '_For admins_\n\nBot is started\!')
-
     try:
         connect()
     except:

@@ -1,25 +1,36 @@
-Table class {
+Table users {
+  id int [pk, increment, unique, not null]
+  telegram_id int [not null]
+  lang varchar [not null]
+}
+
+Table user_classes {
+  id int [pk, increment, unique, not null]
+  user_id int [ref: > users.id, not null]
+  class_id int [ref: > classes.id, not null]
+}
+
+Table classes {
   id int [pk, increment, unique, not null]
   chat_id int [unique, not null]
-  admin_id int [not null]
-  name varchar [not null]
   
+  name varchar [not null]
   lang varchar [not null]
   notify boolean [not null]
-  lesson int [not null]
-  tomorrow datetime [not null]
-  timezone int [not null]
+  notify_day_before datetime [not null]
+  notify_before_lesson int [not null]
+  tz int [not null]
 }
 
-Table group {
+Table groups {
   id int [pk, increment, unique, not null]
-  class_id int [ref: > class.id, not null]
+  class_id int [ref: > classes.id, not null]
   name varchar [not null]
 }
 
-Table lesson {
+Table lessons {
   id int [pk, increment, unique, not null]
-  group_id int [ref: > group.id, not null]
+  group_id int [ref: > groups.id, not null]
   
   name varchar [not null]
   start datetime [not null]

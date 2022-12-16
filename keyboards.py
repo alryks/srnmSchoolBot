@@ -5,7 +5,9 @@ from langs import langs
 from db.main import connect
 from db.model import *
 
-from utils import choose_language
+from utils import *
+
+import datetime
 
 
 def create_inline_keyboard(buttons, width=3):
@@ -16,203 +18,232 @@ def create_inline_keyboard(buttons, width=3):
     return ikm
 
 
-async def edit_class(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['edit_class']['name'], callback_data='name_edit_class')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['edit_class']['delete'], callback_data='delete_edit_class')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['edit_class']['cancel'], callback_data='cancel_edit_class')])
-
-    return create_inline_keyboard(rows)
-
-
-async def class_name(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['new_class']['cancel'], callback_data='cancel_edit_class_name')])
-
-    return create_inline_keyboard(rows)
-
-
-async def delete_class(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['delete_class']['yes'], callback_data='yes_delete_class'),
-                 InlineKeyboardButton(langs[lang]['keyboards']['delete_class']['no'], callback_data='no_delete_class')])
-
-    return create_inline_keyboard(rows)
-
-
-async def sure_delete_class(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['sure_delete_class']['yes'], callback_data='yes_sure_delete_class')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['sure_delete_class']['no'], callback_data='no_sure_delete_class')])
-
-    return create_inline_keyboard(rows)
-
-
-async def settings(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    s = connect()
-    editclass = s.query(Class).filter(Class.chat_id == message.chat.id).one()
-
-    current_timezone = str(editclass.timezone) if editclass.timezone < 0 else '+' + str(editclass.timezone)
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['admins'], callback_data='admins')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['lang'].format(lang=editclass.lang), callback_data='lang')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['notify'].format(notify='✅' if editclass.notify else '❌'), callback_data='notify')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['timezone'].format(timezone=current_timezone), callback_data='timezone')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['time'], callback_data='time_settings')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['settings']['cancel'], callback_data='cancel_settings')])
-
-    return create_inline_keyboard(rows)
-
-
-async def timezone(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    s = connect()
-    editclass = s.query(Class).filter(Class.chat_id == message.chat.id).one()
-    current_timezone = editclass.timezone
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['timezone']['back'], callback_data='back_timezone')])
-    for i in range(-12, 15):
-        text = langs[lang]['keyboards']['timezone'][str(i) if i < 0 else '+' + str(i)]
-        if i == current_timezone:
-             text += " ✅"
-        rows.append([InlineKeyboardButton(text, callback_data=str(i))])
-
-    return create_inline_keyboard(rows)
-
-
-async def time_settings(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    async with state.proxy() as data:
-        before = data['before']
-        hrs = data['hrs']
-        mins = data['mins']
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['save'], callback_data='save_time_settings')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['lesson'], callback_data='none_time_settings_1')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['left'], callback_data='left_before'),
-                 InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['before'].format(mins=before), callback_data='none_time_settings_2'),
-                 InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['right'], callback_data='right_before')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['day'], callback_data='none_time_settings_3')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['left'], callback_data='left_hrs'),
-                 InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['hours'].format(hours=hrs), callback_data='none_time_settings_4'),
-                 InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['right'], callback_data='right_hrs')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['left'], callback_data='left_mins'),
-                 InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['minutes'].format(mins=mins), callback_data='none_time_settings_5'),
-                 InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['right'], callback_data='right_mins')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['time_settings']['back'], callback_data='back_time_settings')])
-
-    return create_inline_keyboard(rows)
-
-
-async def groups(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    s = connect()
-    groups = s.query(Group).filter(Group.class_id == s.query(Class).filter(Class.chat_id == message.chat.id).one().id)
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['groups']['add'], callback_data='add_groups')])
-    for i, group in enumerate(groups):
-        rows.append([InlineKeyboardButton(group.name, callback_data=f'group_{group.id}')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['groups']['cancel'], callback_data='cancel_groups')])
-
-    return create_inline_keyboard(rows)
-
-
-async def add_group(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['add_group']['back'], callback_data='back_add_group')])
-
-    return create_inline_keyboard(rows)
-
-
-async def group(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['group']['name'], callback_data='name_group')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['group']['delete'], callback_data='delete_group')])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['group']['back'], callback_data='back_group')])
-
-    return create_inline_keyboard(rows)
-
-
-async def edit_group_name(message: Message, state: FSMContext):
-    lang = choose_language(message)
-
-    rows = list()
-
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['edit_group_name']['cancel'], callback_data='cancel_edit_group_name')])
-
-    return create_inline_keyboard(rows)
-
-
-async def delete_group(message: Message, state: FSMContext):
-    lang = choose_language(message)
+def settings(action, data=None):
+    fields = create_button_text(action, 'settings')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
 
     rows = list()
 
     rows.append([
-        InlineKeyboardButton(langs[lang]['keyboards']['delete_group']['yes'], callback_data='yes_delete_group'),
-        InlineKeyboardButton(langs[lang]['keyboards']['delete_group']['no'], callback_data='no_delete_group'),
+        InlineKeyboardButton(fields['lang'].format(lang=data['lang']), callback_data='settings_lang')
+    ])
+    rows.append([
+        InlineKeyboardButton(cancel, callback_data='settings_cancel')
     ])
 
     return create_inline_keyboard(rows)
 
 
-async def admins(callback: CallbackQuery, state: FSMContext):
-    lang = choose_language(callback.message)
-
-    s = connect()
-    editclass = s.query(Class).filter(Class.chat_id == callback.message.chat.id).one()
-    admin_list = editclass.admin_id.split()
+def class_create_name(action, data=None):
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
 
     rows = list()
-
-    if len(admin_list) < 5:
-        rows.append([InlineKeyboardButton(langs[lang]['keyboards']['admins']['add'], callback_data='add_admin')])
-    for admin in admin_list:
-        if callback.from_user.id == int(admin):
-            rows.append([InlineKeyboardButton(admin, callback_data='none_' + admin)])
-        else:
-            rows.append([InlineKeyboardButton(admin, callback_data='none_' + admin), InlineKeyboardButton("❌", callback_data='delete_admin_' + admin)])
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['admins']['back'], callback_data='back_admins')])
+    rows.append([
+        InlineKeyboardButton(cancel, callback_data='class_create_name_cancel')
+    ])
 
     return create_inline_keyboard(rows)
 
 
-async def add_admin(message: Message, state: FSMContext):
-    lang = choose_language(message)
+def class_choose(action, data=None):
+    fields = create_button_text(action, 'class_choose')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
 
     rows = list()
 
-    rows.append([InlineKeyboardButton(langs[lang]['keyboards']['admins']['back'], callback_data='back_add_admin')])
+    for i in range(len(data)):
+        rows.append([
+            InlineKeyboardButton(data[i].name, callback_data=f'class_choose_{data[i].id}')
+        ])
+    rows.append([
+        InlineKeyboardButton(fields['add_class'], callback_data='class_choose_add')
+    ])
+    rows.append([
+        InlineKeyboardButton(cancel, callback_data='class_choose_cancel')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def class_now(action):
+    fields = create_button_text(action, 'class_now')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(fields['groups'], callback_data='class_now_groups')
+    ])
+    rows.append([
+        InlineKeyboardButton(fields['name'], callback_data='class_now_name')
+    ])
+    rows.append([
+        InlineKeyboardButton(fields['settings'], callback_data='class_now_settings')
+    ])
+    rows.append([
+        InlineKeyboardButton(fields['delete'], callback_data='class_now_delete')
+    ])
+    rows.append([
+        InlineKeyboardButton(back, callback_data='class_now_back')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def class_change_name(action):
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+    rows.append([
+        InlineKeyboardButton(back, callback_data='class_change_name_back')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def class_settings(action, data):
+    fields = create_button_text(action, 'class_settings')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(fields['admins'], callback_data='class_settings_admins')
+    ])
+    rows.append([
+        InlineKeyboardButton(fields['lang'].format(lang=data.lang), callback_data='class_settings_lang')
+    ])
+    rows.append([
+        InlineKeyboardButton(fields['notify'].format(notify="✅" if data.notify else "❌"), callback_data='class_settings_notify')
+    ])
+    rows.append([
+        InlineKeyboardButton(fields['time'], callback_data='class_settings_time')
+    ])
+    rows.append([
+        InlineKeyboardButton(fields['tz'].format(tz="+" + str(data.tz) if data.tz >= 0 else str(data.tz)), callback_data='class_settings_tz')
+    ])
+    rows.append([
+        InlineKeyboardButton(back, callback_data='class_settings_back')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def class_delete(action):
+    fields = create_button_text(action, 'class_delete')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(fields['yes'], callback_data='class_delete_yes'),
+        InlineKeyboardButton(fields['no'], callback_data='class_delete_no'),
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def class_settings_tz(action, data):
+    fields = create_button_text(action, 'class_settings_tz')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='class_settings_tz_back'),
+    ])
+
+    for key in fields.keys():
+        if int(key) == data.tz:
+            rows.append([InlineKeyboardButton("✅ " + fields[key], callback_data=f'class_settings_tz_{key}')])
+        else:
+            rows.append([InlineKeyboardButton(fields[key], callback_data=f'class_settings_tz_{key}')])
+
+    return create_inline_keyboard(rows)
+
+
+def class_settings_time(action, data):
+    fields = create_button_text(action, 'class_settings_time')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='class_settings_time_back'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['day'], callback_data='none_class_settings_time_day'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton('◀', callback_data='class_settings_time_hrs_left'),
+        InlineKeyboardButton(fields['hrs'].format(hrs=data['hrs']), callback_data='none_class_settings_time_hrs'),
+        InlineKeyboardButton('▶', callback_data='class_settings_time_hrs_right'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton('◀', callback_data='class_settings_time_mins_left'),
+        InlineKeyboardButton(fields['mins'].format(mins=data['mins']), callback_data='none_class_settings_time_mins'),
+        InlineKeyboardButton('▶', callback_data='class_settings_time_mins_right'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['lesson'], callback_data='none_class_settings_time_lesson'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton('◀', callback_data='class_settings_time_gap_left'),
+        InlineKeyboardButton(fields['gap'].format(gap=data['gap']), callback_data='none_class_settings_time_gap'),
+        InlineKeyboardButton('▶', callback_data='class_settings_time_gap_right'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['save'], callback_data='class_settings_time_save'),
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def group_create_name(action):
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+    rows.append([
+        InlineKeyboardButton(back, callback_data='group_create_name_back')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def group_choose(action, data):
+    fields = create_button_text(action, 'group_choose')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(fields['add'], callback_data='group_choose_add')
+    ])
+
+    for group in data:
+        rows.append([
+        InlineKeyboardButton(group.name, callback_data=f'group_choose_{group.id}')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='group_choose_back')
+    ])
 
     return create_inline_keyboard(rows)

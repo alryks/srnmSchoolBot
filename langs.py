@@ -1,32 +1,32 @@
 langs = {
     'en': {
         'keyboards': {
-            'edit_class': {
-                'name': "⚙ Edit name",
-                'delete': "❌ Delete class",
-                'cancel': "🔙 Cancel"
-            },
-            'new_class': {
-                'cancel': "🔙 Cancel"
-            },
-            'delete_class': {
-                'yes': "👍 Yes, I am!",
-                'no': "😢 Nooo!"
-            },
-            'sure_delete_class': {
-                'yes': "✅ No doubt!",
-                'no': "❌ Not on your life!"
-            },
+            'cancel': "🔙 Cancel",
+            'back': "🔙 Back",
             'settings': {
-                'admins': "👨‍💻 Change admins",
-                'lang': "💭 Language: {lang}",
-                'notify': "🔔 Notifications: {notify}",
-                'timezone': "✈ Timezone: UTC{timezone}",
-                'time': "⏰ Notifications time",
-                'cancel': "🔙 Cancel"
+                'lang': "🗺 Language: {lang}"
             },
-            'timezone': {
-                'back': "🔙 Back",
+            'class_choose': {
+                'add_class': "📚 Create class"
+            },
+            'class_now': {
+                'groups': "Groups 👫",
+                'name': "Change name 🔁",
+                'settings': "Settings ⚙",
+                'delete': "Delete ❌"
+            },
+            'class_settings': {
+                'admins': "Admins 👨‍💻",
+                'lang': "🗺 Language: {lang}",
+                'notify': "🔔 Notifications: {notify}",
+                'time': "⏰ Notification time",
+                'tz': "⏳ Timezone: {tz}"
+            },
+            'class_delete': {
+                'yes': "Yes",
+                'no': "No"
+            },
+            'class_settings_tz': {
                 '-12': "UTC−12, USA, Baker Island",
                 '-11': "UTC−11, USA, Samoa",
                 '-10': "UTC−10, USA, Hawaii",
@@ -55,39 +55,16 @@ langs = {
                 '+13': "UTC+13, Samoa",
                 '+14': "UTC+14, Kitibati, Line Islands",
             },
-            'time_settings': {
-                'save': "✅ Save cahnges",
-                'lesson': "👨‍🎓 Before lesson",
-                'left': "◀",
-                'before': "{mins} min.",
-                'right': "▶",
-                'day': "📆 Day before",
-                'hours': "{hours} h.",
-                'minutes': "{mins} min.",
-                'back': "🔙 Back"
+            'class_settings_time': {
+                'day': "🌞 Day before",
+                'lesson': "🛎 Before lesson",
+                'hrs': "{hrs} hrs",
+                'mins': "{mins} mins",
+                'gap': "{gap} mins",
+                'save': "✅ Save changes"
             },
-            'groups': {
-                'add': "➕ Add group",
-                'cancel': "🔙 Cancel"
-            },
-            'add_group': {
-                'back': "🔙 Back"
-            },
-            'group': {
-                'name': "♻ Edit name",
-                'delete': "❌ Delete group",
-                'back': "🔙 Back"
-            },
-            'edit_group_name': {
-                'cancel': "🔙 Cancel"
-            },
-            'delete_group': {
-                'yes': "✅ Sure",
-                'no': "❌ Not at all"
-            },
-            'admins': {
-                'add': "➕ Add admin",
-                'back': "🔙 Back"
+            'group_choose': {
+                'add': "Add group ➕"
             }
         },
         'start':
@@ -96,154 +73,100 @@ Hi {name}! 👋
 
 📅 I'm @srnmSchoolBot for scheduling your school *lessons* and reminding you about your *school tasks* 📝
 
-📌 For more _info_ try /help
+📌 For more info try /help
             """,
         'help':
             """
-🤔 To use @srnmSchoolBot add it into *your class chat*
-After that use _this commands_ in order and _follow instructions_:
+🤔 To use @srnmSchoolBot add it into your class chat
+After that use this commands in order and _follow instructions_:
 
 📍 /class — firstly, you should create your class. Type in name of it. If it is already created, you can change its name or delete it with all data!
 
 📍 /settings — after you have created your class, you should go to settings to choose the language and your timezone and change the notification system
             """,
-        'not_group':
+        'max_lim':
             """
-❌ To use @srnmSchoolBot and its command you should chat with it in a group!
-
-📍 For detailed instructions use /help
-            """,
-        'not_text':
-            """
-🤔 Make sure that what you send is a text message!
-            """,
-        'only_admin':
-            """
-❌ Only admin can do this!
-            """,
-        'too_fast':
-            """
-❌ Don't click too fast. Retry in {seconds} seconds!
-            """,
-        'edit_class':
-            """
-😍 This is your class: *{name}*
-
-👉 Here you can change its name or *delete* it
-
-_❗❗❗ WARNING ❗❗❗
-Note that if you delete your class, all data including groups and timetables will be deleted_
-            """,
-        'edit_class_name':
-            """
-Choose a new name for your class...
-            """,
-        'edit_class_name_changed':
-            """
-♻ Class name was changed on *{name}*
-            """,
-        'new_class':
-            """
-What would be the name of your class?
-            """,
-        'new_class_created':
-            """
-🎉 Your class with name *{name}* has been successfully created!
-
-📍 Don't forget to check out /settings before using the bot!
-
-👨‍🎓 To use scheduling feature, create at least _one group_ via /groups
-            """,
-        'delete_class':
-            """
-❓ Are you sure you want to delete your class *{name}*? 
-
-All your data will be deleted including your groups and timetables for this groups! ❌
-            """,
-        'sure_delete_class':
-            """
-🤔 *100% SURE???*
-            """,
-        'sure_delete_class_deleted':
-            """
-✅ Your class has been successfully deleted!
-
-📍 You can create a new one via /class
-            """,
-        'no_class':
-            """
-📌 Class is not created yet. Use /class to do it
+❗ Your message should be less than {symbols} symbols
             """,
         'settings':
             """
-⚙ Here you can change the settings for your class *{name}*:
+⚙ These are @srnmSchoolBot settings! You can change your language here:
+            """,
+        'class_create_name':
+            """
+What name should be given for your new class?
+            """,
+        'class_verify':
+            """
+🤔 Now you should verify *{name}*!
 
-📍 Change language the bot will chat with you
-📍 Turn on/off (✅/❌) the notifications about the lessons on the next day and about the next lesson
-📍 Change your timezone to get your notifications just in time
-📍 Change the time you will be notified
-            """,
-        'timezone':
-            """
-🗺 Choose the timezone where your class *{name}* is located!
+👉 Add @srnmSchoolBot to your class chat and then go with /verify in this chat
 
-This is needed to make the bot usable in different countries with different timezones ⏳
+📌 _Notice that you should be an administrator in this chat_
             """,
-        'time_settings':
+        'class_exists':
             """
-⏰ Here you can choose when you want to be notified about lessons in your class *{name}*...
+Class for this chat already exists! ❌
+            """,
+        'not_admin':
+            """
+❗ You must be an admin of this chat to create a class
+            """,
+        'class_added':
+            """
+Class has been successfully added! ✅
 
-🔜 Firstly, choose the time gap before the lesson when @srnmSchoolBot will send you a message about next lesson
+Use /class
+            """,
+        'class_choose':
+            """
+🏫 Here are your classes. Choose one to work with:
+            """,
+        'class_now':
+            """
+This is your class *{name}* 👈
 
-🕰 Then choose the exact time of the day when you will be notified about the next day lessons
+⚙ You can change its name, delete it, change some settings and choose a group to edit timetable
             """,
-        'groups':
+        'class_change_name':
             """
-📈 Here you can create groups to edit your lessons timetable or choose an existing one!
+What new name of your class {name} should we take? 🤔
             """,
-        'add_group':
+        'class_settings':
             """
-What would be the name of a new group?
-            """,
-        'added_group':
-            """
-✅ Group *{class_name} {group}* has been added successfully! Check out /timetable to schedule your lessons
-            """,
-        'group':
-            """
-⚙ This is *{class_name} {group}*. Here you can edit your group's name or delete it!
-            """,
-        'edit_group_name':
-            """
-🤔 Choose a new name for *{class_name} {group}*
-            """,
-        'edit_group_name_changed':
-            """
-✅ Group name has been changed!
-            """,
-        'delete_group':
-            """
-🤔 Are you sure you want to delete *{class_name} {group}*? _All the *timetables* for this group will be *deleted*!_
-            """,
-        'deleted_group':
-            """
-✅ Group has been successfully deleted!
-            """,
-        'admins':
-            """
-👉 Here is an admin list of *{name}*!
+Here are the settings for your class *{name}*:
 
-📌 You can delete the existing one (except for yourself) or add a new one (maximum of 5 admins) 
+🔻 You can change admins of the class
+🔻 Change language settings
+🔻 Turn on/off notifications about lessons
+🔻 Edit the time of notifications
+🔻 Change the timezone
             """,
-        'add_admin':
+        'class_delete':
             """
-✍ Type in an id of the user you want to be an admin
+❓ Sure want to delete your class {name}? *ALL DATA ABOUT YOUR LESSONS AND GROUPS WILL BE DELETED!!!* ❓
+            """,
+        'class_deleted':
+            """
+Class {name} has been successfully *deleted*! Try /class to create a new one or choose the existing one
+            """,
+        'class_settings_tz':
+            """
+🌏 Choose your timezone to be notified in the correct time
+            """,
+        'class_settings_time':
+            """
+⌚ Put the time your class *{name}* would be notified the day before lessons
 
-_📍 You can ask a user you want to add to look his id in @userinfobot_
+🕰 Then put a time gap when you would be notified about the next lesson 
             """,
-        'incorrect_admin':
+        'group_create_name':
             """
-❗ ID must be not longer than 10 symbols
+What should be the name of your *{name}* group?
+            """,
+        'group_choose':
+            """
+Here are *{name}* groups! Choose one to edit timetable 👈 
             """
     }
 }

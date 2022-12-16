@@ -1,54 +1,66 @@
-class Class():
-    def __init__(
-            self,
+import datetime
 
-            chat_id,
-            admin_id,
-            name,
 
-            lang,
-            notify,
-            lesson,
-            tomorrow,
-            timezone
-    ):
+class Users:
+    def __init__(self,
+                 telegram_id,
+                 lang='en'
+                 ):
+        self.telegram_id = telegram_id
+        self.lang = lang
+
+
+class Classes:
+    def __init__(self,
+                 name,
+                 chat_id=-1,
+
+                 lang='en',
+                 notify=True,
+                 notify_day_before=datetime.datetime(year=2005, month=9, day=9, hour=18),
+                 notify_before_lesson=10,
+                 tz=3
+                 ):
         self.chat_id = chat_id
-        self.admin_id = admin_id
-        self.name = name
 
+        self.name = name
         self.lang = lang
         self.notify = notify
-        self.lesson = lesson
-        self.tomorrow = tomorrow
-        self.timezone = timezone
+        self.notify_day_before = notify_day_before
+        self.notify_before_lesson = notify_before_lesson
+        self.tz = tz
 
 
-class Group():
-    def __init__(
-            self,
+class UserClasses:
+    def __init__(self,
+                 user_id,
+                 class_id
+                 ):
+        self.user_id = user_id
+        self.class_id = class_id
 
-            class_id,
-            name
-    ):
+
+class Groups:
+    def __init__(self,
+                 class_id,
+                 name
+                 ):
         self.class_id = class_id
         self.name = name
 
 
-class Lesson():
-    def __init__(
-            self,
+class Lessons:
+    def __init__(self,
+                 group_id,
 
-            group_id,
-
-            name,
-            start,
-            length,
-            homework,
-            place,
-            weekly
-    ):
+                 name,
+                 start,
+                 homework,
+                 place,
+                 length=45,
+                 weekly=False
+                 ):
         self.group_id = group_id
-
         self.name = name
         self.start = start
         self.length = length
