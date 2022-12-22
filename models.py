@@ -18,7 +18,6 @@ class PrivateStates(StatesGroup):
 
     class_settings = State()
     class_admins = State()
-    class_delete_admin = State()
     class_add_admin = State()
     class_notifications = State()
     class_timezone = State()

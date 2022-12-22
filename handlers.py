@@ -190,7 +190,35 @@ async def group_create_name(action: Union[Message, CallbackQuery], state: FSMCon
         clas = s.query(Classes).filter(Classes.id == class_id).one()
         groups = s.query(Groups).filter(Groups.class_id == class_id).all()
 
+        await PrivateStates.group_choose.set()
         await text_message(action, create_text(action, 'group_choose', name=clas.name), keyboard=keyboards.group_choose(action, groups))
+
+
+@dp.message_handler(lambda message: message.chat.type == 'private', state=PrivateStates.class_add_admin)
+async def class_add_admin(action: Union[Message, CallbackQuery], state: FSMContext):
+    symbols = 10
+    if len(action.text) > symbols:
+        await max_lim(action, symbols)
+    else:
+        async with state.proxy() as data:
+            class_id = data['class_id']
+        s = connect()
+        user = s.query(Users).filter(Users.telegram_id == action.text)
+        if user.count() == 0:
+            user = Users(action.text)
+            s.add(user)
+            s.commit()
+        user = s.query(Users).filter(Users.telegram_id == action.text).one()
+        user_classes = s.query(UserClasses).filter(UserClasses.user_id == user.id and UserClasses.class_id == class_id)
+        if user_classes.count() == 0:
+            user_classes = UserClasses(user.id, class_id)
+            s.add(user_classes)
+            s.commit()
+
+        admin_ids = s.query(UserClasses).filter(UserClasses.class_id == class_id).all()
+        admins = [s.query(Users).filter(Users.id == admin_id.user_id).one().telegram_id for admin_id in admin_ids]
+        await PrivateStates.class_admins.set()
+        await text_message(action, create_text(action, 'class_admins'), keyboard=keyboards.class_admins(action, admins))
 
 
 @dp.message_handler(lambda message: message.chat.type == 'private', state=PrivateStates.group_change_name)
@@ -286,6 +314,18 @@ async def callback_class_now(callback: CallbackQuery, state: FSMContext):
         await text_message(callback, create_text(callback, 'class_delete', name=clas.name), keyboard=keyboards.class_delete(callback))
 
 
+@dp.callback_query_handler(state=PrivateStates.class_change_name)
+async def callback_class_change_name(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    if callback.data == 'class_change_name_back':
+        await PrivateStates.class_now.set()
+        await text_message(callback, create_text(callback, 'class_now', name=clas.name), keyboard=keyboards.class_now(callback))
+
+
 @dp.callback_query_handler(state=PrivateStates.class_delete)
 async def callback_class_delete(callback: CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
@@ -318,7 +358,12 @@ async def callback_class_settings(callback: CallbackQuery, state: FSMContext):
 
     s = connect()
     clas = s.query(Classes).filter(Classes.id == class_id).one()
-    if callback.data == 'class_settings_lang':
+    if callback.data == 'class_settings_admins':
+        admin_ids = s.query(UserClasses).filter(UserClasses.class_id == class_id).all()
+        admins = [s.query(Users).filter(Users.id == admin_id.user_id).one().telegram_id for admin_id in admin_ids]
+        await PrivateStates.class_admins.set()
+        await text_message(callback, create_text(callback, 'class_admins', name=clas.name), keyboard=keyboards.class_admins(callback, admins))
+    elif callback.data == 'class_settings_lang':
         new_lang = settings.LANGS[(settings.LANGS.index(clas.lang) + 1) % len(settings.LANGS)]
         s.query(Classes).filter(Classes.id == class_id).update({'lang': new_lang})
         s.commit()
@@ -341,7 +386,49 @@ async def callback_class_settings(callback: CallbackQuery, state: FSMContext):
         await text_message(callback, create_text(callback, 'class_settings_time', name=clas.name), keyboard=keyboards.class_settings_time(callback, data))
     elif callback.data == 'class_settings_back':
         await PrivateStates.class_now.set()
-        await text_message(callback, create_text(callback, 'class_now'), keyboard=keyboards.class_now(callback))
+        await text_message(callback, create_text(callback, 'class_now', name=clas.name), keyboard=keyboards.class_now(callback))
+
+
+@dp.callback_query_handler(state=PrivateStates.class_admins)
+async def callback_class_admins(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    if callback.data == 'class_admins_back':
+        await PrivateStates.class_now.set()
+        await text_message(callback, create_text(callback, 'class_now', name=clas.name), keyboard=keyboards.class_now(callback))
+    elif callback.data == 'class_add_admin':
+        await PrivateStates.class_add_admin.set()
+        await text_message(callback, create_text(callback, 'class_add_admin', name=clas.name), keyboard=keyboards.class_add_admin(callback))
+    elif callback.data.startswith('none_class_admin'):
+        await alert(callback)
+    elif callback.data.startswith('class_admin'):
+        admin_ids = s.query(UserClasses).filter(UserClasses.class_id == class_id).all()
+        admins = [s.query(Users).filter(Users.id == admin_id.user_id).one().telegram_id for admin_id in admin_ids]
+        id = callback.data.split('class_admin_')[1]
+        if id in admins:
+            user_id = s.query(Users).filter(Users.telegram_id == id).one().id
+            s.query(UserClasses).filter(UserClasses.user_id == user_id and UserClasses.class_id == class_id).delete()
+            s.commit()
+            admin_ids = s.query(UserClasses).filter(UserClasses.class_id == class_id).all()
+            admins = [s.query(Users).filter(Users.id == admin_id.user_id).one().telegram_id for admin_id in admin_ids]
+        await text_message(callback, create_text(callback, 'class_admins', name=clas.name), keyboard=keyboards.class_admins(callback, admins))
+
+
+@dp.callback_query_handler(state=PrivateStates.class_add_admin)
+async def callback_class_add_admin(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    if callback.data == 'class_add_admin_back':
+        admin_ids = s.query(UserClasses).filter(UserClasses.class_id == class_id).all()
+        admins = [s.query(Users).filter(Users.id == admin_id.user_id).one().telegram_id for admin_id in admin_ids]
+        await PrivateStates.class_admins.set()
+        await text_message(callback, create_text(callback, 'class_admins', name=clas.name), keyboard=keyboards.class_admins(callback, admins))
 
 
 @dp.callback_query_handler(state=PrivateStates.class_timezone)
@@ -491,5 +578,5 @@ async def callback_group_change_name(callback: CallbackQuery, state: FSMContext)
     groups = s.query(Groups).filter(Groups.class_id == class_id).all()
     if callback.data == 'group_change_name_back':
         await PrivateStates.group_now.set()
-        await text_message(callback, create_text(callback, 'group_now', clas=clas, group=group), keyboard=keyboards.group_now(callback))
+        await text_message(callback, create_text(callback, 'group_now', clas=clas.name, group=group.name), keyboard=keyboards.group_now(callback))
 

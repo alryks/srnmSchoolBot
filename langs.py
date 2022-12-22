@@ -26,6 +26,9 @@ langs = {
                 'yes': "Yes",
                 'no': "No"
             },
+            'class_admins': {
+                'add_admin': "➕ Add admin"
+            },
             'class_settings_tz': {
                 '-12': "UTC−12, USA, Baker Island",
                 '-11': "UTC−11, USA, Samoa",
@@ -188,6 +191,18 @@ Which name do you prefer instead of *{clas} {group}*? 🤔
         'group_delete':
             """
 Are you sure you want to delete your *{group}* of *{clas}*? Your timetable for this group will be deleted too! ❌
+            """,
+        'class_admins':
+            """
+Here are all admins of *{name}*! You can delete these admins, except for yourself
+
+Also, you can add other admins for your class
+            """,
+        'class_add_admin':
+            """
+To add an admin to *{name}*, send me the Telegram ID of the user
+
+Ask this user to use @userinfobot to give you their Telegram ID
             """
     }
 }

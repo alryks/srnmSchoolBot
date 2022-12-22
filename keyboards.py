@@ -54,13 +54,13 @@ def class_choose(action, data=None):
 
     rows = list()
 
+    rows.append([
+        InlineKeyboardButton(fields['add_class'], callback_data='class_choose_add')
+    ])
     for i in range(len(data)):
         rows.append([
             InlineKeyboardButton(data[i].name, callback_data=f'class_choose_{data[i].id}')
         ])
-    rows.append([
-        InlineKeyboardButton(fields['add_class'], callback_data='class_choose_add')
-    ])
     rows.append([
         InlineKeyboardButton(cancel, callback_data='class_choose_cancel')
     ])
@@ -145,6 +145,47 @@ def class_delete(action):
     rows.append([
         InlineKeyboardButton(fields['yes'], callback_data='class_delete_yes'),
         InlineKeyboardButton(fields['no'], callback_data='class_delete_no'),
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def class_admins(action, data):
+    fields = create_button_text(action, 'class_admins')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append(
+        [InlineKeyboardButton(back, callback_data='class_admins_back')]
+    )
+
+    rows.append(
+        [InlineKeyboardButton(action.from_user.id, callback_data=f'none_class_admin_{action.from_user.id}')]
+    )
+
+    for admin in data:
+        if int(admin) != action.from_user.id:
+            rows.append([
+                InlineKeyboardButton(admin, callback_data=f'none_class_admin_{admin}'),
+                InlineKeyboardButton('❌', callback_data=f'class_admin_{admin}'),
+            ])
+
+    rows.append(
+        [InlineKeyboardButton(fields['add_admin'], callback_data='class_add_admin')]
+    )
+
+    return create_inline_keyboard(rows)
+
+
+def class_add_admin(action):
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+    rows.append([
+        InlineKeyboardButton(back, callback_data='class_add_admin_back')
     ])
 
     return create_inline_keyboard(rows)
