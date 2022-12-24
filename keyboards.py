@@ -289,6 +289,7 @@ def group_choose(action, data):
 
     return create_inline_keyboard(rows)
 
+
 def group_now(action):
     fields = create_button_text(action, 'group_now')
     cancel = create_button_text(action, 'cancel')
@@ -337,6 +338,171 @@ def group_delete(action):
     rows.append([
         InlineKeyboardButton(fields['yes'], callback_data='group_delete_yes'),
         InlineKeyboardButton(fields['no'], callback_data='group_delete_no'),
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def group_timetable(action, lessons, date):
+    fields = create_button_text(action, 'group_timetable')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(fields['copy'], callback_data='group_timetable_copy')
+    ])
+
+    rows.append([
+        InlineKeyboardButton('◀', callback_data='group_timetable_month_left'),
+        InlineKeyboardButton(f'{fields[months[date.month]]} {date.year}', callback_data='none_group_timetable_month'),
+        InlineKeyboardButton('▶', callback_data='group_timetable_month_right'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton('◀', callback_data='group_timetable_day_left'),
+        InlineKeyboardButton(f'{fields[weekdays[date.weekday()]]} {date.day}', callback_data='none_group_timetable_day'),
+        InlineKeyboardButton('▶', callback_data='group_timetable_day_right'),
+    ])
+
+    for i, lesson in enumerate(lessons):
+        rows.append([
+            InlineKeyboardButton(f'{i + 1}. {lesson.name}', callback_data=f'group_timetable_lesson_{lesson.id}')
+        ])
+
+    rows.append([
+        InlineKeyboardButton(fields['add'], callback_data='group_timetable_add')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='group_timetable_back')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def lesson_name(action):
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='lesson_name_back')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def lesson_create(action, data):
+    fields = create_button_text(action, 'lesson')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='lesson_create_back')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['name'], callback_data='lesson_name')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['time'], callback_data='lesson_create_time')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['homework'], callback_data='lesson_create_homework')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['place'], callback_data='lesson_create_place')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['weekly'].format(weekly='✅' if data['lesson_weekly'] else '❌'), callback_data='lesson_create_weekly')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['all'].format(all='✅' if data['lesson_all'] else '❌'), callback_data='lesson_create_all')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['create'], callback_data='lesson_create_add')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def lesson_time(action, data, save=False):
+    fields = create_button_text(action, 'lesson_time')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='lesson_time_back'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['start'], callback_data='none_lesson_time_start'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton('◀', callback_data='lesson_time_hrs_left'),
+        InlineKeyboardButton(fields['hrs'].format(hrs=data['date'].hour), callback_data='none_lesson_time_hrs'),
+        InlineKeyboardButton('▶', callback_data='lesson_time_hrs_right'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton('◀', callback_data='lesson_time_mins_left'),
+        InlineKeyboardButton(fields['mins'].format(mins=data['date'].minute), callback_data='none_lesson_time_mins'),
+        InlineKeyboardButton('▶', callback_data='lesson_time_mins_right'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['duration'], callback_data='none_lesson_time_duration'),
+    ])
+
+    rows.append([
+        InlineKeyboardButton('◀', callback_data='lesson_time_duration_left'),
+        InlineKeyboardButton(fields['length'].format(length=data['lesson_length']), callback_data='none_lesson_time_duration'),
+        InlineKeyboardButton('▶', callback_data='lesson_time_duration_right'),
+    ])
+
+    if save:
+        rows.append([
+            InlineKeyboardButton(fields['save'], callback_data='lesson_time_save'),
+        ])
+
+    return create_inline_keyboard(rows)
+
+
+def lesson_homework(action):
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='lesson_homework_back')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def lesson_place(action):
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='lesson_place_back')
     ])
 
     return create_inline_keyboard(rows)

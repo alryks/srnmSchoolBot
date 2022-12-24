@@ -17,6 +17,7 @@ from aiogram.dispatcher.dispatcher import FSMContext
 from aiogram.utils.exceptions import RetryAfter, MessageNotModified
 
 import datetime
+from dateutil.relativedelta import relativedelta
 
 dp = main.dp
 bot = main.bot
@@ -240,6 +241,80 @@ async def group_change_name(action: Union[Message, CallbackQuery], state: FSMCon
         await text_message(action, create_text(action, 'group_now', clas=clas.name, group=group.name), keyboard=keyboards.group_now(action))
 
 
+@dp.message_handler(lambda message: message.chat.type == 'private', state=PrivateStates.lesson_create_name)
+async def lesson_create_name(action: Union[Message, CallbackQuery], state: FSMContext):
+    symbols = 64
+    if len(action.text) > symbols:
+        await max_lim(action, symbols)
+    else:
+        async with state.proxy() as data:
+            class_id = data['class_id']
+            group_id = data['group_id']
+            date = data['date']
+            data['lesson_name'] = action.text
+            data['lesson_homework'] = False
+            data['lesson_place'] = False
+            data['lesson_weekly'] = False
+            data['lesson_all'] = False
+            data['lesson_length'] = 45
+
+            data['date'] = data['date'].replace(hour=9, minute=0)
+
+        s = connect()
+
+        group = s.query(Groups).filter(Groups.id == group_id).one()
+        clas = s.query(Classes).filter(Classes.id == class_id).one()
+
+        fields = create_button_text(action, 'group_timetable')
+
+        info = f"\n🗓 {fields[weekdays[date.weekday()]]}, {date.day} {fields[months[date.month]]}, {date.year}\n📚 {data['lesson_name']}\n⏰ {data['date'].hour}:{data['date'].minute if data['date'].minute > 9 else '0' + str(data['date'].minute)} — {data['lesson_length']}'"
+
+        if 'lesson_place' in data.keys() and data['lesson_place']:
+            info += f"\n📍 {data['lesson_place']}"
+        if 'lesson_homework' in data.keys() and data['lesson_homework']:
+            info += f"\n📝 {data['lesson_homework']}"
+
+        await PrivateStates.lesson_create.set()
+        await text_message(action, create_text(action, 'lesson_create', clas=clas.name, group=group.name) + info, keyboard=keyboards.lesson_create(action, data))
+
+
+# @dp.message_handler(lambda message: message.chat.type == 'private', state=PrivateStates.lesson_create_homework)
+# async def lesson_create_homework(action: Union[Message, CallbackQuery], state: FSMContext):
+#     symbols = 1024
+#     if len(action.text) > symbols:
+#         await max_lim(action, symbols)
+#     else:
+#         async with state.proxy() as data:
+#             class_id = data['class_id']
+#             group_id = data['group_id']
+#             date = data['date']
+#             data['lesson_name'] = action.text
+#             data['lesson_homework'] = False
+#             data['lesson_place'] = False
+#             data['lesson_weekly'] = False
+#             data['lesson_all'] = False
+#             data['lesson_length'] = 45
+#
+#             data['date'] = data['date'].replace(hour=9, minute=0)
+#
+#         s = connect()
+#
+#         group = s.query(Groups).filter(Groups.id == group_id).one()
+#         clas = s.query(Classes).filter(Classes.id == class_id).one()
+#
+#         fields = create_button_text(action, 'group_timetable')
+#
+#         info = f"\n🗓 {fields[weekdays[date.weekday()]]}, {date.day} {fields[months[date.month]]}, {date.year}\n📚 {data['lesson_name']}\n⏰ {data['date'].hour}:{data['date'].minute if data['date'].minute > 9 else '0' + str(data['date'].minute)} — {data['lesson_length']}'"
+#
+#         if 'lesson_place' in data.keys() and data['lesson_place']:
+#             info += f"\n📍 {data['lesson_place']}"
+#         if 'lesson_homework' in data.keys() and data['lesson_homework']:
+#             info += f"\n📝 {data['lesson_homework']}"
+#
+#         await PrivateStates.lesson_create.set()
+#         await text_message(action, create_text(action, 'lesson_create', clas=clas.name, group=group.name) + info, keyboard=keyboards.lesson_create(action, data))
+
+
 
 """
 CALLBACK HANDLERS
@@ -397,8 +472,8 @@ async def callback_class_admins(callback: CallbackQuery, state: FSMContext):
     s = connect()
     clas = s.query(Classes).filter(Classes.id == class_id).one()
     if callback.data == 'class_admins_back':
-        await PrivateStates.class_now.set()
-        await text_message(callback, create_text(callback, 'class_now', name=clas.name), keyboard=keyboards.class_now(callback))
+        await PrivateStates.class_settings.set()
+        await text_message(callback, keyboard=keyboards.class_settings(callback, clas))
     elif callback.data == 'class_add_admin':
         await PrivateStates.class_add_admin.set()
         await text_message(callback, create_text(callback, 'class_add_admin', name=clas.name), keyboard=keyboards.class_add_admin(callback))
@@ -539,7 +614,20 @@ async def callback_group_now(callback: CallbackQuery, state: FSMContext):
         await PrivateStates.group_change_name.set()
         await text_message(callback, create_text(callback, 'group_change_name', clas=clas.name, group=group.name), keyboard=keyboards.group_change_name(callback))
     elif callback.data == 'group_now_timetable':
-        pass
+        await PrivateStates.group_timetable.set()
+
+        date_utc = datetime.datetime.utcnow()
+        delta = datetime.timedelta(hours=clas.tz)
+        date = date_utc + delta
+
+        lessons_daily = list(filter(lambda lesson: lesson.start.date() == date.date(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 0).all()))
+        lessons_weekly = list(filter(lambda lesson: lesson.start.weekday() == date.weekday(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 1).all()))
+        lessons = sorted(lessons_daily + lessons_weekly, key=lambda lesson: lesson.start.time())
+
+        async with state.proxy() as data:
+            data['date'] = date
+
+        await text_message(callback, create_text(callback, 'group_timetable', clas=clas.name, group=group.name), keyboard=keyboards.group_timetable(callback, lessons, date))
     elif callback.data == 'group_now_delete':
         await PrivateStates.group_delete.set()
         await text_message(callback, create_text(callback, 'group_delete', clas=clas.name, group=group.name), keyboard=keyboards.group_delete(callback))
@@ -580,3 +668,339 @@ async def callback_group_change_name(callback: CallbackQuery, state: FSMContext)
         await PrivateStates.group_now.set()
         await text_message(callback, create_text(callback, 'group_now', clas=clas.name, group=group.name), keyboard=keyboards.group_now(callback))
 
+
+@dp.callback_query_handler(state=PrivateStates.group_timetable)
+async def callback_group_timetable(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+        date = data['date']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    group = s.query(Groups).filter(Groups.id == group_id).one()
+    if callback.data == 'group_timetable_copy':
+        pass
+    elif callback.data == 'group_timetable_add':
+        async with state.proxy() as data:
+            data['date'] = date
+            data['lesson_name'] = False
+            data['lesson_homework'] = False
+            data['lesson_place'] = False
+            data['lesson_weekly'] = False
+            data['lesson_all'] = False
+            data['lesson_length'] = False
+        await PrivateStates.lesson_create_name.set()
+        await text_message(callback, create_text(callback, 'lesson_create_name'), keyboard=keyboards.lesson_name(callback))
+    elif callback.data.startswith('group_timetable_lesson_'):
+        id = int(callback.data.split('group_timetable_lesson_')[1])
+    elif callback.data == 'group_timetable_back':
+        await PrivateStates.group_now.set()
+        await text_message(callback, create_text(callback, 'group_now', clas=clas.name, group=group.name), keyboard=keyboards.group_now(callback))
+    elif callback.data.startswith('none_group_timetable'):
+        await alert(callback)
+    elif callback.data.startswith('group_timetable_month'):
+        if callback.data.endswith('left'):
+            k = -1
+        else:
+            k = 1
+        timedelta = relativedelta(months=k)
+        new_date = date + timedelta
+        date = new_date
+
+        lessons_daily = list(filter(lambda lesson: lesson.start.date() == date.date(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 0).all()))
+        lessons_weekly = list(filter(lambda lesson: lesson.start.weekday() == date.weekday(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 1).all()))
+        lessons = sorted(lessons_daily + lessons_weekly, key=lambda lesson: lesson.start.time())
+
+        async with state.proxy() as data:
+            data['date'] = new_date
+            data['lesson_name'] = False
+            data['lesson_weekly'] = False
+            data['lesson_all'] = False
+
+        await text_message(callback, keyboard=keyboards.group_timetable(callback, lessons, new_date))
+    elif callback.data.startswith('group_timetable_day'):
+        if callback.data.endswith('left'):
+            k = -1
+        else:
+            k = 1
+        timedelta = datetime.timedelta(days=k)
+        new_date = date + timedelta
+        date = new_date
+
+        lessons_daily = list(filter(lambda lesson: lesson.start.date() == date.date(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 0).all()))
+        lessons_weekly = list(filter(lambda lesson: lesson.start.weekday() == date.weekday(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 1).all()))
+        lessons = sorted(lessons_daily + lessons_weekly, key=lambda lesson: lesson.start.time())
+
+        async with state.proxy() as data:
+            data['date'] = new_date
+
+        await text_message(callback, keyboard=keyboards.group_timetable(callback, lessons, new_date))
+
+
+@dp.callback_query_handler(state=PrivateStates.lesson_create_name)
+async def callback_lesson_create_name(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+        date = data['date']
+        name = data['lesson_name']
+        homework = data['lesson_homework']
+        place = data['lesson_place']
+        weekly = data['lesson_weekly']
+        all_groups = data['lesson_all']
+        length = data['lesson_length']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    group = s.query(Groups).filter(Groups.id == group_id).one()
+    groups = s.query(Groups).filter(Groups.class_id == class_id).all()
+    if callback.data == 'lesson_name_back':
+        if name:
+            s = connect()
+
+            group = s.query(Groups).filter(Groups.id == group_id).one()
+            clas = s.query(Classes).filter(Classes.id == class_id).one()
+
+            fields = create_button_text(callback, 'group_timetable')
+
+            info = f"\n🗓 {fields[weekdays[date.weekday()]]}, {date.day} {fields[months[date.month]]}, {date.year}\n📚 {data['lesson_name']}\n⏰ {data['date'].hour}:{data['date'].minute if data['date'].minute > 9 else '0' + str(data['date'].minute)} — {data['lesson_length']}'"
+
+            if 'lesson_place' in data.keys() and data['lesson_place']:
+                info += f"\n📍 {data['lesson_place']}"
+            if 'lesson_homework' in data.keys() and data['lesson_homework']:
+                info += f"\n📝 {data['lesson_homework']}"
+
+            await PrivateStates.lesson_create.set()
+            await text_message(callback, create_text(callback, 'lesson_create', clas=clas.name, group=group.name) + info, keyboard=keyboards.lesson_create(callback, data))
+        else:
+            await PrivateStates.group_timetable.set()
+
+            lessons_daily = list(filter(lambda lesson: lesson.start.date() == date.date(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 0).all()))
+            lessons_weekly = list(filter(lambda lesson: lesson.start.weekday() == date.weekday(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 1).all()))
+            lessons = sorted(lessons_daily + lessons_weekly, key=lambda lesson: lesson.start.time())
+
+            async with state.proxy() as data:
+                data['date'] = date
+
+            await text_message(callback, create_text(callback, 'group_timetable', clas=clas.name, group=group.name), keyboard=keyboards.group_timetable(callback, lessons, date))
+
+
+@dp.callback_query_handler(state=PrivateStates.lesson_create)
+async def callback_lesson_create(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+        date = data['date']
+        name = data['lesson_name']
+        homework = data['lesson_homework']
+        place = data['lesson_place']
+        weekly = data['lesson_weekly']
+        all_groups = data['lesson_all']
+        length = data['lesson_length']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    group = s.query(Groups).filter(Groups.id == group_id).one()
+    if callback.data == 'lesson_create_back':
+        await PrivateStates.group_timetable.set()
+
+        lessons_daily = list(filter(lambda lesson: lesson.start.date() == date.date(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 0).all()))
+        lessons_weekly = list(filter(lambda lesson: lesson.start.weekday() == date.weekday(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 1).all()))
+        lessons = sorted(lessons_daily + lessons_weekly, key=lambda lesson: lesson.start.time())
+
+        async with state.proxy() as data:
+            data['date'] = date
+            data['lesson_name'] = False
+            data['lesson_homework'] = False
+            data['lesson_place'] = False
+            data['lesson_weekly'] = False
+            data['lesson_all'] = False
+            data['lesson_length'] = False
+
+        await text_message(callback, create_text(callback, 'group_timetable', clas=clas.name, group=group.name), keyboard=keyboards.group_timetable(callback, lessons, date))
+    elif callback.data == 'lesson_name':
+        await PrivateStates.lesson_create_name.set()
+        await text_message(callback, create_text(callback, 'lesson_create_name'), keyboard=keyboards.lesson_name(callback))
+    elif callback.data == 'lesson_create_time':
+        async with state.proxy() as data:
+            data['lesson_length'] = 45
+            data['date'] = data['date'].replace(hour=9, minute=0)
+        await PrivateStates.lesson_create_time.set()
+        await text_message(callback, create_text(callback, 'lesson_time'), keyboard=keyboards.lesson_time(callback, data))
+    elif callback.data == 'lesson_create_homework':
+        await PrivateStates.lesson_create_homework.set()
+        await text_message(callback, create_text(callback, 'lesson_homework'), keyboard=keyboards.lesson_homework(callback))
+    elif callback.data == 'lesson_create_place':
+        await PrivateStates.lesson_create_place.set()
+        await text_message(callback, create_text(callback, 'lesson_place'), keyboard=keyboards.lesson_place(callback))
+    elif callback.data == 'lesson_create_weekly':
+        new_weekly = not weekly
+        async with state.proxy() as data:
+            data['lesson_weekly'] = new_weekly
+        await text_message(callback, keyboard=keyboards.lesson_create(callback, data))
+    elif callback.data == 'lesson_create_all':
+        new_all = not all_groups
+        async with state.proxy() as data:
+            data['lesson_all'] = new_all
+        await text_message(callback, keyboard=keyboards.lesson_create(callback, data))
+    elif callback.data == 'lesson_create_add':
+        async with state.proxy() as data:
+            date = data['date']
+            name = data['lesson_name']
+            homework = data['lesson_homework']
+            place = data['lesson_place']
+            weekly = data['lesson_weekly']
+            all_groups = data['lesson_all']
+            length = data['lesson_length']
+
+        if all_groups:
+            groups = s.query(Groups).filter(Groups.class_id == class_id).all()
+            for g in groups:
+                lesson = Lessons(g.id, name, date, homework, place, length, weekly)
+                s.add(lesson)
+        else:
+            lesson = Lessons(group_id, name, date, homework, place, length, weekly)
+            s.add(lesson)
+        s.commit()
+
+        await PrivateStates.group_timetable.set()
+
+        lessons_daily = list(filter(lambda lesson: lesson.start.date() == date.date(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 0).all()))
+        lessons_weekly = list(filter(lambda lesson: lesson.start.weekday() == date.weekday(), s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.weekly == 1).all()))
+        lessons = sorted(lessons_daily + lessons_weekly, key=lambda lesson: lesson.start.time())
+
+        async with state.proxy() as data:
+            data['date'] = date
+            data['lesson_name'] = False
+            data['lesson_homework'] = False
+            data['lesson_place'] = False
+            data['lesson_weekly'] = False
+            data['lesson_all'] = False
+            data['lesson_length'] = False
+
+        await text_message(callback, create_text(callback, 'group_timetable', clas=clas.name, group=group.name), keyboard=keyboards.group_timetable(callback, lessons, date))
+
+
+@dp.callback_query_handler(state=PrivateStates.lesson_create_homework)
+async def callback_lesson_create_homework(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+        date = data['date']
+        name = data['lesson_name']
+        homework = data['lesson_homework']
+        place = data['lesson_place']
+        weekly = data['lesson_weekly']
+        all_groups = data['lesson_all']
+        length = data['lesson_length']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    group = s.query(Groups).filter(Groups.id == group_id).one()
+    groups = s.query(Groups).filter(Groups.class_id == class_id).all()
+    if callback.data == 'lesson_homework_back':
+        s = connect()
+
+        group = s.query(Groups).filter(Groups.id == group_id).one()
+        clas = s.query(Classes).filter(Classes.id == class_id).one()
+
+        fields = create_button_text(callback, 'group_timetable')
+
+        info = f"\n🗓 {fields[weekdays[date.weekday()]]}, {date.day} {fields[months[date.month]]}, {date.year}\n📚 {data['lesson_name']}\n⏰ {data['date'].hour}:{data['date'].minute if data['date'].minute > 9 else '0' + str(data['date'].minute)} — {data['lesson_length']}'"
+
+        if 'lesson_place' in data.keys() and data['lesson_place']:
+            info += f"\n📍 {data['lesson_place']}"
+        if 'lesson_homework' in data.keys() and data['lesson_homework']:
+            info += f"\n📝 {data['lesson_homework']}"
+
+        await PrivateStates.lesson_create.set()
+        await text_message(callback, create_text(callback, 'lesson_create', clas=clas.name, group=group.name) + info, keyboard=keyboards.lesson_create(callback, data))
+
+
+@dp.callback_query_handler(state=PrivateStates.lesson_create_place)
+async def callback_lesson_create_place(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+        date = data['date']
+        name = data['lesson_name']
+        homework = data['lesson_homework']
+        place = data['lesson_place']
+        weekly = data['lesson_weekly']
+        all_groups = data['lesson_all']
+        length = data['lesson_length']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    group = s.query(Groups).filter(Groups.id == group_id).one()
+    groups = s.query(Groups).filter(Groups.class_id == class_id).all()
+    if callback.data == 'lesson_place_back':
+        s = connect()
+
+        group = s.query(Groups).filter(Groups.id == group_id).one()
+        clas = s.query(Classes).filter(Classes.id == class_id).one()
+
+        fields = create_button_text(callback, 'group_timetable')
+
+        info = f"\n🗓 {fields[weekdays[date.weekday()]]}, {date.day} {fields[months[date.month]]}, {date.year}\n📚 {data['lesson_name']}\n⏰ {data['date'].hour}:{data['date'].minute if data['date'].minute > 9 else '0' + str(data['date'].minute)} — {data['lesson_length']}'"
+
+        if 'lesson_place' in data.keys() and data['lesson_place']:
+            info += f"\n📍 {data['lesson_place']}"
+        if 'lesson_homework' in data.keys() and data['lesson_homework']:
+            info += f"\n📝 {data['lesson_homework']}"
+
+        await PrivateStates.lesson_create.set()
+        await text_message(callback, create_text(callback, 'lesson_create', clas=clas.name, group=group.name) + info, keyboard=keyboards.lesson_create(callback, data))
+
+
+@dp.callback_query_handler(state=PrivateStates.lesson_create_time)
+async def callback_lesson_create_time(callback: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        class_id = data['class_id']
+        group_id = data['group_id']
+        date = data['date']
+        name = data['lesson_name']
+        homework = data['lesson_homework']
+        place = data['lesson_place']
+        weekly = data['lesson_weekly']
+        all_groups = data['lesson_all']
+        length = data['lesson_length']
+
+    s = connect()
+    clas = s.query(Classes).filter(Classes.id == class_id).one()
+    if callback.data == 'lesson_time_back':
+        s = connect()
+
+        group = s.query(Groups).filter(Groups.id == group_id).one()
+        clas = s.query(Classes).filter(Classes.id == class_id).one()
+
+        fields = create_button_text(callback, 'group_timetable')
+
+        info = f"\n🗓 {fields[weekdays[date.weekday()]]}, {date.day} {fields[months[date.month]]}, {date.year}\n📚 {data['lesson_name']}\n⏰ {data['date'].hour}:{data['date'].minute if data['date'].minute > 9 else '0' + str(data['date'].minute)} — {data['lesson_length']}'"
+
+        if 'lesson_place' in data.keys() and data['lesson_place']:
+            info += f"\n📍 {data['lesson_place']}"
+        if 'lesson_homework' in data.keys() and data['lesson_homework']:
+            info += f"\n📝 {data['lesson_homework']}"
+
+        await PrivateStates.lesson_create.set()
+        await text_message(callback, create_text(callback, 'lesson_create', clas=clas.name, group=group.name) + info, keyboard=keyboards.lesson_create(callback, data))
+    elif callback.data.startswith('none_lesson_time'):
+        await alert(callback)
+    elif callback.data.startswith('lesson_time'):
+        async with state.proxy() as data:
+            if callback.data == 'lesson_time_hrs_left':
+                data['date'] = data['date'].replace(hour=(data['date'].hour - 1) % 24)
+            elif callback.data == 'lesson_time_hrs_right':
+                data['date'] = data['date'].replace(hour=(data['date'].hour + 1) % 24)
+            elif callback.data == 'lesson_time_mins_left':
+                data['date'] = data['date'].replace(minute=(data['date'].minute - 5) % 60)
+            elif callback.data == 'lesson_time_mins_right':
+                data['date'] = data['date'].replace(minute=(data['date'].minute + 5) % 60)
+            elif callback.data == 'lesson_time_duration_left':
+                data['lesson_length'] = max(data['lesson_length'] - 5, 0)
+            elif callback.data == 'lesson_time_duration_right':
+                data['lesson_length'] = data['lesson_length'] + 5
+
+            await text_message(callback, keyboard=keyboards.lesson_time(callback, data))

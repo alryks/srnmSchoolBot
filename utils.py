@@ -15,6 +15,31 @@ import sqlalchemy
 
 all_states = [*GroupStates.all_states, *PrivateStates.all_states, None]
 
+months = {
+    1: 'jan',
+    2: 'feb',
+    3: 'mar',
+    4: 'apr',
+    5: 'may',
+    6: 'jun',
+    7: 'jul',
+    8: 'aug',
+    9: 'sep',
+    10: 'oct',
+    11: 'nov',
+    12: 'dec',
+}
+
+weekdays = {
+    0: 'mon',
+    1: 'tue',
+    2: 'wed',
+    3: 'thi',
+    4: 'fri',
+    5: 'sat',
+    6: 'sun',
+}
+
 def markdownv2(text: str) -> str:
     symbols = ['[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
     for s in symbols:

@@ -78,23 +78,79 @@ langs = {
                 'yes': "Yes",
                 'no': "No"
             },
+            'group_timetable': {
+                'copy': "📄 Copy timetable",
+                'add': "➕ Add lesson",
+                'jan': "Jan",
+                'feb': "Feb",
+                'mar': "Mar",
+                'apr': "Apr",
+                'may': "May",
+                'jun': "Jun",
+                'jul': "Jul",
+                'aug': "Aug",
+                'sep': "Sep",
+                'oct': "Oct",
+                'nov': "Nov",
+                'dec': "Dec",
+                'mon': "Mon",
+                'tue': "Tue",
+                'wed': "Wed",
+                'thi': "Thi",
+                'fri': "Fri",
+                'sat': "Sat",
+                'sun': "Sun",
+            },
+            'lesson': {
+                'name': "💁‍♂️ Change name",
+                'time': "⏳ Start time and duration",
+                'homework': "📚 Homework",
+                'place': "📍 Place",
+                'weekly': "📅 Weekly? {weekly}",
+                'all': "👁‍🗨 Add for all groups? {all}",
+                'create': "Create lesson ➕"
+            },
+            'lesson_time': {
+                'start': "⏰ Start time",
+                'hrs': "{hrs} hrs",
+                'mins': "{mins} mins",
+                'duration': "⏳ Duration",
+                'length': "{length} mins",
+                'save': "✅ Save changes"
+            }
         },
         'start':
             """
 Hi {name}! 👋
 
-📅 I'm @srnmSchoolBot for scheduling your school *lessons* and reminding you about your *school tasks* 📝
+📅 I'm @srnmSchoolBot for scheduling your school *lessons* and reminding you about your *school tasks*
+
+📝 I should be added into your *class chat* to be able to send you messages about your *lessons*
 
 📌 For more info try /help
             """,
         'help':
             """
-🤔 To use @srnmSchoolBot add it into your class chat
-After that use this commands in order and _follow instructions_:
+🌎 First of all, go to /settings and choose your language if exists!
 
-📍 /class — firstly, you should create your class. Type in name of it. If it is already created, you can change its name or delete it with all data!
+🤔 To use @srnmSchoolBot you should go with /class command
 
-📍 /settings — after you have created your class, you should go to settings to choose the language and your timezone and change the notification system
+📃 If you had already created at least one class, just choose it from the list (or create a new one)
+➕ Otherwise, you will be given an opportunity to create one. Enter the name of your new class
+
+💭 After that you should add @srnmSchoolBot into your class chat
+✅ Then write /verify to connect your class and the bot (note that you should be an administrator in this chat)
+
+⏩ Now you're done! You can go with /class command again and choose your class
+⚙ Go to settings at first! Here choose if you want to be notified about the lessons, choose the timezone of your class to be notified in the correct time and then you have to set notification time
+👨‍💻 You can also add another administrator, for example, if you want someone to help you in editing the schedule (note that new administrators can delete other admins)
+👉 To choose language for your class, just press the button
+
+❌ You can delete whole class with all groups and lessons, you can change class name
+
+📍 To use scheduling feature, create at least one group. You can also delete it with all the lessons or change its name
+
+🗓 Now you can edit timetable!
             """,
         'max_lim':
             """
@@ -203,6 +259,36 @@ Also, you can add other admins for your class
 To add an admin to *{name}*, send me the Telegram ID of the user
 
 Ask this user to use @userinfobot to give you their Telegram ID
+            """,
+        'group_timetable':
+            """
+🗓 This is the timetable for *{clas} {group}*!
+
+🤔 Here you can copy an existing timetable from the another group if they exist and add new lessons or edit the existing ones on the particular date
+            """,
+        'lesson_create_name':
+            """
+What should be the name of your new lesson? 📕
+            """,
+        'lesson_create':
+            """
+Here you can edit your new lesson for *{clas} {group}*! 👈
+
+♻ You can change the name of it, choose start time and its duration, input the homework, change the place, set if this lesson should be every week, choose if this lesson should be added to all groups
+
+And that is what info about your lesson you have already filled 👇
+            """,
+        'lesson_time':
+            """
+Here you can change when the lesson starts and its duration ⏰
+            """,
+        'lesson_homework':
+            """
+Send me your homework here 📗
+            """,
+        'lesson_place':
+            """
+Choose a place for your lesson! It can be the number of your classroom or even the whole address 📍
             """
     }
 }
