@@ -54,6 +54,16 @@ def initialise():
                     Column('weekly', BOOLEAN, primary_key=False, autoincrement=False, unique=False, nullable=False, default=False)
                     )
 
+    weekly_lessons = Table('weekly_lessons', meta,
+                           Column('id', INTEGER, primary_key=True, autoincrement=True, unique=True, nullable=False),
+                           Column('lesson_id', INTEGER, primary_key=False, autoincrement=False, unique=False, nullable=False),
+                           Column('week', INTEGER, primary_key=False, autoincrement=False, unique=False, nullable=False),
+
+                           Column('name', VARCHAR(64), primary_key=False, autoincrement=False, unique=False, nullable=True),
+                           Column('homework', VARCHAR(1024), primary_key=False, autoincrement=False, unique=False, nullable=True),
+                           Column('place', VARCHAR(1024), primary_key=False, autoincrement=False, unique=False, nullable=True),
+                           )
+
     engine = create_engine(f'mysql+pymysql://{DB["user"]}:{DB["password"]}@{DB["host"]}/{DB["name"]}', echo=True)
     meta.create_all(engine)
 
@@ -67,6 +77,7 @@ def connect():
     user_classes = Table('user_classes', meta, autoload=True)
     groups = Table('groups', meta, autoload=True)
     lessons = Table('lessons', meta, autoload=True)
+    weekly_lessons = Table('weekly_lessons', meta, autoload=True)
 
     try:
         mapper(Users, users)
@@ -74,6 +85,7 @@ def connect():
         mapper(UserClasses, user_classes)
         mapper(Groups, groups)
         mapper(Lessons, lessons)
+        mapper(WeeklyLessons, weekly_lessons)
     except sqlalchemy.exc.ArgumentError:
         pass
 

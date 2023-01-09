@@ -79,7 +79,6 @@ langs = {
                 'no': "No"
             },
             'group_timetable': {
-                'copy': "📄 Copy timetable",
                 'add': "➕ Add lesson",
                 'jan': "Jan",
                 'feb': "Feb",
@@ -108,7 +107,11 @@ langs = {
                 'place': "📍 Place",
                 'weekly': "📅 Weekly? {weekly}",
                 'all': "👁‍🗨 Add for all groups? {all}",
-                'create': "Create lesson ➕"
+                'create': "Create lesson ➕",
+                'save': "Save changes ✅",
+                'delete': "❌ Delete lesson",
+                'original': "⤴ Back to original lesson",
+                'restore': "♻ Restore changes"
             },
             'lesson_time': {
                 'start': "⏰ Start time",
@@ -179,6 +182,10 @@ Class for this chat already exists! ❌
         'not_admin':
             """
 ❗ You must be an admin of this chat to create a class
+            """,
+        'no_classes':
+            """
+❗ You have no classes to verify! Go to @srnmSchoolBot to create a new class
             """,
         'class_added':
             """
@@ -270,11 +277,32 @@ Ask this user to use @userinfobot to give you their Telegram ID
             """
 What should be the name of your new lesson? 📕
             """,
+        'lesson_name':
+            """
+What should be a new name of your lesson called *{lesson}*? 📕
+            """,
         'lesson_create':
             """
 Here you can edit your new lesson for *{clas} {group}*! 👈
 
 ♻ You can change the name of it, choose start time and its duration, input the homework, change the place, set if this lesson should be every week, choose if this lesson should be added to all groups
+
+And that is what info about your lesson you have already filled 👇
+            """,
+        'lesson':
+            """
+Here you can edit your lesson for *{clas} {group}*! 👈
+
+♻ You can change the name of it, choose start time and its duration, input the homework, change the place, set if this lesson should be every week and delete it
+
+And that is what info about your lesson you have already filled 👇
+            """,
+        'weekly_lesson':
+            """
+Here you can edit your lesson for *{clas} {group}*! 👈
+
+🤔 This lesson is automatically created, because you set Weekly parameter in the original lesson! Here you can only change name, homework and place of the lesson
+👉 You can also go to the original lesson to apply changes to all future weekly scheduled lessons or you can restore changes for this particular lesson to match with the original one
 
 And that is what info about your lesson you have already filled 👇
             """,

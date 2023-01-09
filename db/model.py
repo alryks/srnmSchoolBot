@@ -61,9 +61,27 @@ class Lessons:
                  weekly=False
                  ):
         self.group_id = group_id
+
         self.name = name
         self.start = start
         self.length = length
         self.homework = homework
         self.place = place
         self.weekly = weekly
+
+
+class WeeklyLessons:
+    def __init__(self,
+                 lesson_id,
+                 week,
+
+                 name,
+                 homework,
+                 place
+                 ):
+        self.lesson_id = lesson_id
+        self.week = week
+
+        self.name = name
+        self.homework = homework
+        self.place = place

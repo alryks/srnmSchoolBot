@@ -40,10 +40,18 @@ weekdays = {
     6: 'sun',
 }
 
+
 def markdownv2(text: str) -> str:
     symbols = ['[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
     for s in symbols:
         text = text.replace(s, '\\' + s)
+    return text
+
+
+def remove_markdownv2(text: str) -> str:
+    symbols = ['\\', '*', '_']
+    for s in symbols:
+        text = text.replace('\\' + s, s)
     return text
 
 
@@ -102,11 +110,10 @@ def get_user_name(action: Union[Message, CallbackQuery]):
 
 async def text_message(action: Union[Message, CallbackQuery], text=None, keyboard=None):
     if type(action) == CallbackQuery:
-        if text:
-            if text != action.message.text:
-                await action.message.edit_text(text)
-        if keyboard:
-            if keyboard != action.message.reply_markup:
+        if text and text.replace("*", "").replace("_", "").replace("\\", "").strip() != action.message.text.replace("*", "").replace("_", "").replace("\\", "").strip():
+            await action.message.edit_text(text, reply_markup=keyboard)
+        else:
+            if keyboard and keyboard != action.message.reply_markup:
                 await action.message.edit_reply_markup(keyboard)
             else:
                 await alert(action)

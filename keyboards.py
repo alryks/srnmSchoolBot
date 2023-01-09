@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery, ReplyKeyboardMarkup
 from aiogram.dispatcher.dispatcher import FSMContext
 from langs import langs
 
@@ -59,7 +59,7 @@ def class_choose(action, data=None):
     ])
     for i in range(len(data)):
         rows.append([
-            InlineKeyboardButton(data[i].name, callback_data=f'class_choose_{data[i].id}')
+            InlineKeyboardButton(remove_markdownv2(data[i].name), callback_data=f'class_choose_{data[i].id}')
         ])
     rows.append([
         InlineKeyboardButton(cancel, callback_data='class_choose_cancel')
@@ -280,7 +280,7 @@ def group_choose(action, data):
 
     for group in data:
         rows.append([
-        InlineKeyboardButton(group.name, callback_data=f'group_choose_{group.id}')
+        InlineKeyboardButton(remove_markdownv2(group.name), callback_data=f'group_choose_{group.id}')
     ])
 
     rows.append([
@@ -351,10 +351,6 @@ def group_timetable(action, lessons, date):
     rows = list()
 
     rows.append([
-        InlineKeyboardButton(fields['copy'], callback_data='group_timetable_copy')
-    ])
-
-    rows.append([
         InlineKeyboardButton('◀', callback_data='group_timetable_month_left'),
         InlineKeyboardButton(f'{fields[months[date.month]]} {date.year}', callback_data='none_group_timetable_month'),
         InlineKeyboardButton('▶', callback_data='group_timetable_month_right'),
@@ -368,7 +364,7 @@ def group_timetable(action, lessons, date):
 
     for i, lesson in enumerate(lessons):
         rows.append([
-            InlineKeyboardButton(f'{i + 1}. {lesson.name}', callback_data=f'group_timetable_lesson_{lesson.id}')
+            InlineKeyboardButton(f'{i + 1}. {remove_markdownv2(lesson.name)}', callback_data=f'group_timetable_lesson_{lesson.id}')
         ])
 
     rows.append([
@@ -407,7 +403,7 @@ def lesson_create(action, data):
     ])
 
     rows.append([
-        InlineKeyboardButton(fields['name'], callback_data='lesson_name')
+        InlineKeyboardButton(fields['name'], callback_data='lesson_create_name')
     ])
 
     rows.append([
@@ -415,11 +411,13 @@ def lesson_create(action, data):
     ])
 
     rows.append([
-        InlineKeyboardButton(fields['homework'], callback_data='lesson_create_homework')
+        InlineKeyboardButton(fields['homework'], callback_data='lesson_create_homework'),
+        InlineKeyboardButton("❌", callback_data='lesson_create_homework_delete')
     ])
 
     rows.append([
-        InlineKeyboardButton(fields['place'], callback_data='lesson_create_place')
+        InlineKeyboardButton(fields['place'], callback_data='lesson_create_place'),
+        InlineKeyboardButton("❌", callback_data='lesson_create_place_delete')
     ])
 
     rows.append([
@@ -432,6 +430,60 @@ def lesson_create(action, data):
 
     rows.append([
         InlineKeyboardButton(fields['create'], callback_data='lesson_create_add')
+    ])
+
+    return create_inline_keyboard(rows)
+
+
+def lesson(action, data, week):
+    fields = create_button_text(action, 'lesson')
+    cancel = create_button_text(action, 'cancel')
+    back = create_button_text(action, 'back')
+
+    rows = list()
+
+    rows.append([
+        InlineKeyboardButton(back, callback_data='lesson_back')
+    ])
+
+    if week is not None:
+        rows.append([
+            InlineKeyboardButton(fields['original'], callback_data='lesson_original')
+        ])
+        rows.append([
+            InlineKeyboardButton(fields['restore'], callback_data='lesson_restore')
+        ])
+
+    rows.append([
+        InlineKeyboardButton(fields['name'], callback_data='lesson_name')
+    ])
+
+    if week is None:
+        rows.append([
+            InlineKeyboardButton(fields['time'], callback_data='lesson_time')
+        ])
+
+    rows.append([
+        InlineKeyboardButton(fields['homework'], callback_data='lesson_homework'),
+        InlineKeyboardButton("❌", callback_data='lesson_homework_delete')
+    ])
+
+    rows.append([
+        InlineKeyboardButton(fields['place'], callback_data='lesson_place'),
+        InlineKeyboardButton("❌", callback_data='lesson_place_delete')
+    ])
+
+    if week is None:
+        rows.append([
+            InlineKeyboardButton(fields['weekly'].format(weekly='✅' if data['lesson_weekly'] else '❌'), callback_data='lesson_weekly')
+        ])
+
+        rows.append([
+            InlineKeyboardButton(fields['delete'], callback_data='lesson_delete')
+        ])
+
+    rows.append([
+        InlineKeyboardButton(fields['save'], callback_data='lesson_save')
     ])
 
     return create_inline_keyboard(rows)
