@@ -8,6 +8,12 @@ from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 import handlers
+from utils import *
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+schedule = AsyncIOScheduler()
+schedule.start()
 
 
 async def on_startup(_):
@@ -17,6 +23,7 @@ async def on_startup(_):
         connect()
     except:
         initialise()
+    schedule_lessons(schedule)
 
 storage = MemoryStorage()
 bot = Bot(token=TOKEN, parse_mode=types.ParseMode.MARKDOWN_V2)

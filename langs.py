@@ -128,7 +128,7 @@ Hi {name}! 👋
 
 📅 I'm @srnmSchoolBot for scheduling your school *lessons* and reminding you about your *school tasks*
 
-📝 I should be added into your *class chat* to be able to send you messages about your *lessons*
+📝 I should be added into your Telegram *class chat* to be able to send you messages about your *lessons*
 
 📌 For more info try /help
             """,
@@ -141,8 +141,8 @@ Hi {name}! 👋
 📃 If you had already created at least one class, just choose it from the list (or create a new one)
 ➕ Otherwise, you will be given an opportunity to create one. Enter the name of your new class
 
-💭 After that you should add @srnmSchoolBot into your class chat
-✅ Then write /verify to connect your class and the bot (note that you should be an administrator in this chat)
+💭 After that you should add @srnmSchoolBot into your Telegram class chat
+✅ Then write /verify to connect your class and the bot (note that you should be an *administrator* in this chat)
 
 ⏩ Now you're done! You can go with /class command again and choose your class
 ⚙ Go to settings at first! Here choose if you want to be notified about the lessons, choose the timezone of your class to be notified in the correct time and then you have to set notification time
@@ -154,6 +154,17 @@ Hi {name}! 👋
 📍 To use scheduling feature, create at least one group. You can also delete it with all the lessons or change its name
 
 🗓 Now you can edit timetable!
+👉 Go to the day you want your new lesson to be and press the button to add a lesson
+📚 Input info about your lesson: name (ex. Math), start time (ex. 9hrs 30mins), duration (ex. 45mins), homework (not necessary, ex. Task 5 p. 11), place (not necessary, ex. Room 214 or Caroline College Center)
+🔜 All this info will be displayed, when you would be notified about the lesson. You can also put weekly parameter on if your lesson is held every week. With that type of lessons you can't change their time for future lessons
+🌐 You can also add the lesson for all groups. The duplicates of the lesson will be created for each group in your class
+
+↪ When you are done with scheduling your lessons, you can go to your Telegram class chat and go with /class command again, choose the desired group and choose the lesson you want to know info about
+✅ You will be also notified about the lessons in your chat if you put notification parameter on in settings
+            """,
+        'support':
+            """
+📍 If you see something doesn't work or you need help, you can contact @srnm9
             """,
         'max_lim':
             """
@@ -186,6 +197,28 @@ Class for this chat already exists! ❌
         'no_classes':
             """
 ❗ You have no classes to verify! Go to @srnmSchoolBot to create a new class
+            """,
+        'no_class':
+            """
+❗ You don't have a class for this chat! Go to @srnmSchoolBot to create a new class if you are an admin of this chat
+            """,
+        'no_groups':
+            """
+❗ You have no groups for *{name}*! If you are an admin for this class, go to @srnmSchoolBot to create at least one group. If not, ask your admin to do that
+            """,
+        'lesson_notification':
+            """
+*{clas} #group\_{group}*
+🕰 Your lesson starts in {start} mins
+            """,
+        'daily_notification':
+            """
+*{clas} #group\_{group}*
+Tomorrow you will have following lessons:
+            """,
+        'no_lessons':
+            """
+*{clas} #group\_{name}* you have no lessons tomorrow!
             """,
         'class_added':
             """
@@ -235,6 +268,18 @@ Class {name} has been successfully *deleted*! Try /class to create a new one or 
 
 🕰 Then put a time gap when you would be notified about the next lesson 
             """,
+        'class_admins':
+            """
+Here are all admins of *{name}*! You can delete these admins, except for yourself
+
+Also, you can add other admins for your class
+            """,
+        'class_add_admin':
+            """
+To add an admin to *{name}*, send me the Telegram ID of the user
+
+Ask this user to use @userinfobot to give you their Telegram ID
+            """,
         'group_create_name':
             """
 What should be the name of your *{name}* group?
@@ -242,6 +287,10 @@ What should be the name of your *{name}* group?
         'group_choose':
             """
 Here are *{name}* groups! Choose one to edit timetable 👈 
+            """,
+        'group_choose_timetable':
+            """
+Here are *{name}* groups! Choose one to view timetable 👈 
             """,
         'group_now':
             """
@@ -255,23 +304,17 @@ Which name do you prefer instead of *{clas} {group}*? 🤔
             """
 Are you sure you want to delete your *{group}* of *{clas}*? Your timetable for this group will be deleted too! ❌
             """,
-        'class_admins':
-            """
-Here are all admins of *{name}*! You can delete these admins, except for yourself
-
-Also, you can add other admins for your class
-            """,
-        'class_add_admin':
-            """
-To add an admin to *{name}*, send me the Telegram ID of the user
-
-Ask this user to use @userinfobot to give you their Telegram ID
-            """,
         'group_timetable':
             """
 🗓 This is the timetable for *{clas} {group}*!
 
-🤔 Here you can copy an existing timetable from the another group if they exist and add new lessons or edit the existing ones on the particular date
+🤔 Here you can add new lessons or edit the existing ones on the particular date
+            """,
+        'timetable':
+            """
+🗓 This is the timetable for *{clas} {group}*!
+
+🤔 Here you can view info about your lessons
             """,
         'lesson_create_name':
             """
@@ -306,6 +349,10 @@ Here you can edit your lesson for *{clas} {group}*! 👈
 
 And that is what info about your lesson you have already filled 👇
             """,
+        'group_lesson':
+            """
+Here is info about your lesson in *{clas} {group}* 👇
+            """,
         'lesson_time':
             """
 Here you can change when the lesson starts and its duration ⏰
@@ -317,6 +364,18 @@ Send me your homework here 📗
         'lesson_place':
             """
 Choose a place for your lesson! It can be the number of your classroom or even the whole address 📍
+            """,
+    },
+    'ru': {
+        'start':
             """
+Привет {name}! 👋
+
+📅 Я @srnmSchoolBot для создания *школьного расписания* и уведомления учеников о предстоящих *уроках*
+
+📝 Меня нужно добавить в ваш *классный чат* Telegram, чтобы я мог напоминать Вам о *Ваших уроках*
+
+📌 Для подробной информации введите /help
+            """,
     }
 }

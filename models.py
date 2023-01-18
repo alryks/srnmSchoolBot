@@ -4,7 +4,6 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 class GroupStates(StatesGroup):
     choose_group = State()
     timetable = State()
-    lesson = State()
 
 
 class PrivateStates(StatesGroup):

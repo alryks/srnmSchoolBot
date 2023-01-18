@@ -267,25 +267,31 @@ def group_create_name(action):
     return create_inline_keyboard(rows)
 
 
-def group_choose(action, data):
+def group_choose(action, data, group=False):
     fields = create_button_text(action, 'group_choose')
     cancel = create_button_text(action, 'cancel')
     back = create_button_text(action, 'back')
 
     rows = list()
 
-    rows.append([
-        InlineKeyboardButton(fields['add'], callback_data='group_choose_add')
-    ])
-
-    for group in data:
+    if not group:
         rows.append([
-        InlineKeyboardButton(remove_markdownv2(group.name), callback_data=f'group_choose_{group.id}')
+            InlineKeyboardButton(fields['add'], callback_data='group_choose_add')
+        ])
+
+    for g in data:
+        rows.append([
+        InlineKeyboardButton(remove_markdownv2(g.name), callback_data=f'group_choose_{g.id}')
     ])
 
-    rows.append([
-        InlineKeyboardButton(back, callback_data='group_choose_back')
-    ])
+    if not group:
+        rows.append([
+            InlineKeyboardButton(back, callback_data='group_choose_back')
+        ])
+    else:
+        rows.append([
+            InlineKeyboardButton(cancel, callback_data='group_choose_cancel')
+        ])
 
     return create_inline_keyboard(rows)
 
@@ -343,7 +349,7 @@ def group_delete(action):
     return create_inline_keyboard(rows)
 
 
-def group_timetable(action, lessons, date):
+def group_timetable(action, lessons, date, group=False):
     fields = create_button_text(action, 'group_timetable')
     cancel = create_button_text(action, 'cancel')
     back = create_button_text(action, 'back')
@@ -367,9 +373,10 @@ def group_timetable(action, lessons, date):
             InlineKeyboardButton(f'{i + 1}. {remove_markdownv2(lesson.name)}', callback_data=f'group_timetable_lesson_{lesson.id}')
         ])
 
-    rows.append([
-        InlineKeyboardButton(fields['add'], callback_data='group_timetable_add')
-    ])
+    if not group:
+        rows.append([
+            InlineKeyboardButton(fields['add'], callback_data='group_timetable_add')
+        ])
 
     rows.append([
         InlineKeyboardButton(back, callback_data='group_timetable_back')
