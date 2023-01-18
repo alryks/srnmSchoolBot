@@ -195,29 +195,48 @@ async def send_daily_notification(class_id):
             await main.bot.send_message(clas.chat_id, create_text(clas.lang, 'no_lessons', clas=clas.name, group=group.name))
 
 
-def schedule_lessons(schedule: AsyncIOScheduler):
+def schedule_notifications(schedule: AsyncIOScheduler):
     s = connect()
     lessons = s.query(Lessons)
 
     if lessons.count() > 0:
         lessons = lessons.all()
         for lesson in lessons:
-            group = s.query(Groups).filter(Groups.id == lesson.group_id).one()
-            clas = s.query(Classes).filter(Classes.id == group.class_id).one()
-            if clas.notify:
-                lesson.start -= datetime.timedelta(minutes=clas.notify_before_lesson)
-                if lesson.weekly:
-                    trigger = CronTrigger(day_of_week=lesson.start.weekday(), hour=lesson.start.hour, minute=lesson.start.minute, timezone=datetime.timezone(datetime.timedelta(hours=clas.tz)))
-                else:
-                    trigger = DateTrigger(lesson.start, timezone=datetime.timezone(datetime.timedelta(hours=clas.tz)))
-                schedule.add_job(send_lesson_notification, trigger, args=[lesson.id], id=f'lesson_{lesson.id}')
+            schedule = lesson_notify(schedule, lesson)
 
     classes = s.query(Classes)
 
     if classes.count() > 0:
         classes = classes.all()
         for clas in classes:
-            groups = s.query(Groups).filter(Groups.class_id == clas.id)
-            if clas.notify and groups.count() > 0:
-                trigger = CronTrigger(hour=clas.notify_day_before.hour, minute=clas.notify_day_before.minute, timezone=datetime.timezone(datetime.timedelta(hours=clas.tz)))
-                schedule.add_job(send_daily_notification, trigger, args=[clas.id], id=f'daily_{clas.id}')
+            schedule = class_notify(schedule, clas)
+    return schedule
+
+
+def lesson_notify(schedule, lesson):
+    s = connect()
+    group = s.query(Groups).filter(Groups.id == lesson.group_id).one()
+    clas = s.query(Classes).filter(Classes.id == group.class_id).one()
+    if clas.notify:
+        lesson.start -= datetime.timedelta(minutes=clas.notify_before_lesson)
+        if lesson.weekly:
+            trigger = CronTrigger(day_of_week=lesson.start.weekday(), hour=lesson.start.hour, minute=lesson.start.minute, timezone=datetime.timezone(datetime.timedelta(hours=clas.tz)))
+        else:
+            trigger = DateTrigger(lesson.start, timezone=datetime.timezone(datetime.timedelta(hours=clas.tz)))
+        if schedule.get_job(f'lesson_{lesson.id}'):
+            schedule.modify_job(f'lesson_{lesson.id}', trigger=trigger)
+        else:
+            schedule.add_job(send_lesson_notification, trigger, args=[lesson.id], id=f'lesson_{lesson.id}')
+    return schedule
+
+
+def class_notify(schedule, clas):
+    s = connect()
+    groups = s.query(Groups).filter(Groups.class_id == clas.id)
+    if clas.notify:
+        trigger = CronTrigger(hour=clas.notify_day_before.hour, minute=clas.notify_day_before.minute, timezone=datetime.timezone(datetime.timedelta(hours=clas.tz)))
+        if schedule.get_job(f'daily_{clas.id}'):
+            schedule.modify_job(f'daily_{clas.id}', trigger=trigger)
+        else:
+            schedule.add_job(send_daily_notification, trigger, args=[clas.id], id=f'daily_{clas.id}')
+    return schedule

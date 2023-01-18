@@ -13,4 +13,4 @@ DB = {
 }
 
 # Available languages
-LANGS = ['en']
+LANGS = ['en', 'ru']

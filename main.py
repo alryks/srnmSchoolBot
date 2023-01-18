@@ -23,7 +23,8 @@ async def on_startup(_):
         connect()
     except:
         initialise()
-    schedule_lessons(schedule)
+    handlers.schedule = schedule_notifications(schedule)
+
 
 storage = MemoryStorage()
 bot = Bot(token=TOKEN, parse_mode=types.ParseMode.MARKDOWN_V2)

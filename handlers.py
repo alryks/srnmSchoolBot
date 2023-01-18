@@ -12,6 +12,7 @@ from typing import Union
 from db.main import connect
 from db.model import *
 from sqlalchemy.sql import select
+from sqlalchemy import null
 
 from aiogram.types import Message, CallbackQuery, Update
 from aiogram.dispatcher.dispatcher import FSMContext
@@ -22,6 +23,7 @@ from dateutil.relativedelta import relativedelta
 
 dp = main.dp
 bot = main.bot
+schedule = AsyncIOScheduler()
 
 
 async def max_lim(action, symbols):
@@ -618,6 +620,9 @@ async def callback_class_delete(callback: CallbackQuery, state: FSMContext):
     elif callback.data == 'class_delete_yes':
         groups_ids = s.query(Groups.id).filter(Groups.class_id == class_id)
         lessons_ids = s.query(Lessons.id).filter(Lessons.group_id.in_(select(groups_ids.subquery())))
+        for lesson_id in lessons_ids.all():
+            schedule.remove_job(f'lesson_{lesson_id}')
+        schedule.remove_job(f'daily_{clas.id}')
         s.query(WeeklyLessons).filter(WeeklyLessons.lesson_id.in_(select(lessons_ids.subquery()))).delete(synchronize_session='fetch')
         s.query(Lessons).filter(Lessons.group_id.in_(select(groups_ids.subquery()))).delete(synchronize_session='fetch')
         s.query(Groups).filter(Groups.class_id == class_id).delete(synchronize_session='fetch')
@@ -632,6 +637,7 @@ async def callback_class_delete(callback: CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(state=PrivateStates.class_settings)
 async def callback_class_settings(callback: CallbackQuery, state: FSMContext):
+    global schedule
     async with state.proxy() as data:
         class_id = data['class_id']
 
@@ -653,6 +659,19 @@ async def callback_class_settings(callback: CallbackQuery, state: FSMContext):
         await text_message(callback, create_text(callback, 'class_settings', name=clas.name), keyboard=keyboards.class_settings(callback, clas))
     elif callback.data == 'class_settings_notify':
         clas.notify = (clas.notify + 1) % 2
+        if clas.notify:
+            groups_ids = s.query(Groups.id).filter(Groups.class_id == class_id)
+            lessons_ids = s.query(Lessons.id).filter(Lessons.group_id.in_(select(groups_ids.subquery())))
+            for lesson_id in lessons_ids.all():
+                lesson = s.query(Lessons).filter(Lessons.id == lesson_id).one()
+                schedule = lesson_notify(schedule, lesson)
+            schedule = class_notify(schedule, clas)
+        else:
+            groups_ids = s.query(Groups.id).filter(Groups.class_id == class_id)
+            lessons_ids = s.query(Lessons.id).filter(Lessons.group_id.in_(select(groups_ids.subquery())))
+            for lesson_id in lessons_ids.all():
+                schedule.remove_job(f'lesson_{lesson_id}')
+            schedule.remove_job(f'daily_{clas.id}')
         s.query(Classes).filter(Classes.id == class_id).update({'notify': clas.notify})
         s.commit()
         await text_message(callback, keyboard=keyboards.class_settings(callback, clas))
@@ -670,6 +689,7 @@ async def callback_class_settings(callback: CallbackQuery, state: FSMContext):
         await PrivateStates.class_now.set()
         await text_message(callback, create_text(callback, 'class_now', name=clas.name), keyboard=keyboards.class_now(callback))
     s.close()
+
 
 @dp.callback_query_handler(state=PrivateStates.class_admins)
 async def callback_class_admins(callback: CallbackQuery, state: FSMContext):
@@ -715,6 +735,7 @@ async def callback_class_add_admin(callback: CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(state=PrivateStates.class_timezone)
 async def callback_class_settings_tz(callback: CallbackQuery, state: FSMContext):
+    global schedule
     async with state.proxy() as data:
         class_id = data['class_id']
 
@@ -727,12 +748,19 @@ async def callback_class_settings_tz(callback: CallbackQuery, state: FSMContext)
         clas.tz = int(callback.data.split('class_settings_tz_')[-1])
         s.query(Classes).filter(Classes.id == class_id).update({'tz': clas.tz})
         s.commit()
+        groups_ids = s.query(Groups.id).filter(Groups.class_id == class_id)
+        lessons_ids = s.query(Lessons.id).filter(Lessons.group_id.in_(select(groups_ids.subquery())))
+        for lesson_id in lessons_ids.all():
+            lesson = s.query(Lessons).filter(Lessons.id == lesson_id[0]).one()
+            schedule = lesson_notify(schedule, lesson)
+        schedule = class_notify(schedule, clas)
         await PrivateStates.class_settings.set()
         await text_message(callback, keyboard=keyboards.class_settings(callback, clas))
 
 
 @dp.callback_query_handler(state=PrivateStates.class_notifications)
 async def callback_class_settings_time(callback: CallbackQuery, state: FSMContext):
+    global schedule
     async with state.proxy() as data:
         class_id = data['class_id']
 
@@ -749,9 +777,17 @@ async def callback_class_settings_time(callback: CallbackQuery, state: FSMContex
                 'notify_day_before': datetime.datetime(year=2005, month=9, day=9, hour=data['hrs'], minute=data['mins']),
                 'notify_before_lesson': data['gap']})
             s.commit()
-            await PrivateStates.class_settings.set()
-            clas = s.query(Classes).filter(Classes.id == class_id).one()
-            await text_message(callback, keyboard=keyboards.class_settings(callback, clas))
+
+        groups_ids = s.query(Groups.id).filter(Groups.class_id == class_id)
+        lessons_ids = s.query(Lessons.id).filter(Lessons.group_id.in_(select(groups_ids.subquery())))
+        for lesson_id in lessons_ids.all():
+            lesson = s.query(Lessons).filter(Lessons.id == lesson_id[0]).one()
+            schedule = lesson_notify(schedule, lesson)
+        schedule = class_notify(schedule, clas)
+
+        await PrivateStates.class_settings.set()
+        clas = s.query(Classes).filter(Classes.id == class_id).one()
+        await text_message(callback, keyboard=keyboards.class_settings(callback, clas))
     elif callback.data.startswith('class_settings_time'):
         async with state.proxy() as data:
             if callback.data == 'class_settings_time_hrs_left':
@@ -914,6 +950,12 @@ async def callback_group_delete(callback: CallbackQuery, state: FSMContext):
     groups = s.query(Groups).filter(Groups.class_id == class_id).all()
     if callback.data == 'group_delete_yes':
         await PrivateStates.class_now.set()
+
+        lessons_ids = s.query(Lessons.id).filter(Lessons.group_id == group.id)
+        for lesson_id in lessons_ids.all():
+            schedule.remove_job(f'lesson_{lesson_id}')
+        schedule.remove_job(f'daily_{clas.id}')
+
         lessons_ids = s.query(Lessons.id).filter(Lessons.group_id == group_id)
         s.query(WeeklyLessons).filter(WeeklyLessons.lesson_id.in_(select(lessons_ids.subquery()))).delete(synchronize_session='fetch')
         s.query(Lessons).filter(Lessons.group_id == group_id).delete(synchronize_session='fetch')
@@ -1235,6 +1277,7 @@ async def callback_lesson_create_name(callback: CallbackQuery, state: FSMContext
 
 @dp.callback_query_handler(state=PrivateStates.lesson_create)
 async def callback_lesson_create(callback: CallbackQuery, state: FSMContext):
+    global schedule
     async with state.proxy() as data:
         class_id = data['class_id']
         group_id = data['group_id']
@@ -1344,10 +1387,32 @@ async def callback_lesson_create(callback: CallbackQuery, state: FSMContext):
             for g in groups:
                 lesson = Lessons(g.id, name, date, homework if homework else None, place if place else None, length, weekly)
                 s.add(lesson)
+                s.commit()
+                s.close()
+                s = connect()
+                start_date = date.replace(microsecond=0, second=0)
+                end = start_date + datetime.timedelta(minutes=1)
+                lessons = s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.name == name,
+                                                  Lessons.start >= start_date, Lessons.start < end,
+                                                  Lessons.homework == (homework if homework else null()), Lessons.place == (place if place else null()),
+                                                  Lessons.length == length, Lessons.weekly == weekly).all()
+                lesson_ = max(lessons, key=lambda l: l.id)
+                schedule = lesson_notify(schedule, lesson_)
+
         else:
             lesson = Lessons(group_id, name, date, homework if homework else None, place if place else None, length, weekly)
             s.add(lesson)
-        s.commit()
+            s.commit()
+            s.close()
+            s = connect()
+            start_date = date.replace(microsecond=0, second=0)
+            end = start_date + datetime.timedelta(minutes=1)
+            lessons = s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.name == name,
+                                              Lessons.start >= start_date, Lessons.start < end,
+                                              Lessons.homework == (homework if homework else null()), Lessons.place == (place if place else null()),
+                                              Lessons.length == length, Lessons.weekly == weekly).all()
+            lesson_ = max(lessons, key=lambda l: l.id)
+            schedule = lesson_notify(schedule, lesson_)
 
         await PrivateStates.group_timetable.set()
 
@@ -1505,6 +1570,7 @@ async def callback_lesson_create_time(callback: CallbackQuery, state: FSMContext
 
 @dp.callback_query_handler(state=PrivateStates.lesson)
 async def callback_lesson(callback: CallbackQuery, state: FSMContext):
+    global schedule
     async with state.proxy() as data:
         class_id = data['class_id']
         group_id = data['group_id']
@@ -1685,6 +1751,7 @@ async def callback_lesson(callback: CallbackQuery, state: FSMContext):
             if not lesson.weekly:
                 s.query(WeeklyLessons).filter(WeeklyLessons.lesson_id == lesson.id).delete()
             s.commit()
+            schedule = lesson_notify(schedule, lesson)
         else:
             normal_lesson = s.query(Lessons).filter(Lessons.id == lesson.id).one()
             weekly_lesson = WeeklyLessons(lesson.id, week, lesson.name, lesson.homework, lesson.place)
