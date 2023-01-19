@@ -39,3 +39,13 @@ Table lessons {
   place varchar
   weekly boolean [not null]
 }
+
+Table weekly_lessons {
+  id int [pk, increment, unique, not null]
+  lesson_id int [ref: > lessons.id, not null]
+  week int [not null]
+  
+  name varchar
+  homework varchar
+  place varchar
+}
