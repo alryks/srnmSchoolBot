@@ -719,7 +719,7 @@ Choose a place for your lesson! It can be the number of your classroom or even t
             """,
         'group_lesson':
             """
-Вот та информация об уроке, которая уже заполнена 👇
+Вот информация об уроке *{clas} {group}* 👇
             """,
         'lesson_time':
             """

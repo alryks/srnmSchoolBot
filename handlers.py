@@ -1388,8 +1388,6 @@ async def callback_lesson_create(callback: CallbackQuery, state: FSMContext):
                 lesson = Lessons(g.id, name, date, homework if homework else None, place if place else None, length, weekly)
                 s.add(lesson)
                 s.commit()
-                s.close()
-                s = connect()
                 start_date = date.replace(microsecond=0, second=0)
                 end = start_date + datetime.timedelta(minutes=1)
                 lessons = s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.name == name,
@@ -1403,8 +1401,6 @@ async def callback_lesson_create(callback: CallbackQuery, state: FSMContext):
             lesson = Lessons(group_id, name, date, homework if homework else None, place if place else None, length, weekly)
             s.add(lesson)
             s.commit()
-            s.close()
-            s = connect()
             start_date = date.replace(microsecond=0, second=0)
             end = start_date + datetime.timedelta(minutes=1)
             lessons = s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.name == name,
