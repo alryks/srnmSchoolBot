@@ -1390,7 +1390,7 @@ async def callback_lesson_create(callback: CallbackQuery, state: FSMContext):
                 s.commit()
                 start_date = date.replace(microsecond=0, second=0)
                 end = start_date + datetime.timedelta(minutes=1)
-                lessons = s.query(Lessons).filter(Lessons.group_id == group_id, Lessons.name == name,
+                lessons = s.query(Lessons).filter(Lessons.group_id == g.id, Lessons.name == name,
                                                   Lessons.start >= start_date, Lessons.start < end,
                                                   Lessons.homework == (homework if homework else null()), Lessons.place == (place if place else null()),
                                                   Lessons.length == length, Lessons.weekly == weekly).all()
